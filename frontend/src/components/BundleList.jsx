@@ -103,6 +103,7 @@ export default function BundleList({ networkId, networkSlug, networkColor, netwo
 
 function BundleCard({ bundle, networkColor, networkColorBg, networkColorBorder, delay, onBuy }) {
   const isPopular = bundle.label === '5GB' || bundle.label === '10GB'
+  const price = parseFloat(bundle.price_ghs ?? bundle.price) || 0
   const validityLabel =
     bundle.validity_days === 1 ? '1 Day' :
     bundle.validity_days === 7 ? '1 Week' :
@@ -176,7 +177,7 @@ function BundleCard({ bundle, networkColor, networkColorBg, networkColorBorder, 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
           <span style={{ fontSize: '24px', fontWeight: 800, color: networkColor || 'var(--color-primary-light)', letterSpacing: '-0.02em' }}>
-            GH₵{bundle.price_ghs.toFixed(2)}
+            GH₵{price.toFixed(2)}
           </span>
         </div>
 
