@@ -1,6 +1,10 @@
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Wifi } from 'lucide-react'
 
+import mtnLogo from '../assets/mtn.webp'
+import telecelLogo from '../assets/telecel.webp'
+import airteltigoLogo from '../assets/airteltigo.webp'
+
 // Network config — logos, colors, slugs
 const NETWORKS = [
   {
@@ -15,6 +19,7 @@ const NETWORKS = [
     colorGlow: 'rgba(255,204,0,0.15)',
     emoji: '🟡',
     initial: 'M',
+    logo: mtnLogo,
   },
   {
     id: 'telecel',
@@ -28,6 +33,7 @@ const NETWORKS = [
     colorGlow: 'rgba(232,0,29,0.12)',
     emoji: '🔴',
     initial: 'T',
+    logo: telecelLogo,
   },
   {
     id: 'airteltigo',
@@ -41,6 +47,7 @@ const NETWORKS = [
     colorGlow: 'rgba(0,153,204,0.12)',
     emoji: '🔵',
     initial: 'A',
+    logo: airteltigoLogo,
   },
 ]
 
@@ -130,8 +137,21 @@ function NetworkCard({ network, onSelect, delay }) {
         color: network.id === 'mtn' ? '#1a1200' : 'white',
         letterSpacing: '-0.03em',
         position: 'relative',
+        overflow: 'hidden',
       }}>
-        {network.initial}
+        {network.logo ? (
+          <img 
+            src={network.logo} 
+            alt={network.name} 
+            style={{ 
+              width: '100%', 
+              height: '100%', 
+              objectFit: 'cover',
+            }} 
+          />
+        ) : (
+          network.initial
+        )}
         <div style={{
           position: 'absolute', bottom: -4, right: -4,
           width: 22, height: 22,
@@ -139,6 +159,7 @@ function NetworkCard({ network, onSelect, delay }) {
           borderRadius: '50%',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           border: `2px solid ${network.colorBorder}`,
+          zIndex: 10,
         }}>
           <Wifi size={11} color={network.color} />
         </div>

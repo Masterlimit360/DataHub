@@ -52,7 +52,7 @@ export default function BundlesPage() {
           </button>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            {/* Network logo */}
+             {/* Network logo */}
             <div style={{
               width: 80, height: 80, borderRadius: '22px',
               background: `linear-gradient(135deg, ${network.color}, ${network.colorDark})`,
@@ -61,8 +61,21 @@ export default function BundlesPage() {
               color: network.id === 'mtn' ? '#1a1200' : 'white',
               boxShadow: `0 12px 40px ${network.colorGlow}`,
               flexShrink: 0,
+              overflow: 'hidden',
             }}>
-              {network.initial}
+              {network.logo ? (
+                <img 
+                  src={network.logo} 
+                  alt={network.name} 
+                  style={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    objectFit: 'cover',
+                  }} 
+                />
+              ) : (
+                network.initial
+              )}
             </div>
 
             <div>

@@ -3,6 +3,11 @@ import { useLocation, useNavigate, Link } from 'react-router-dom'
 import { Phone, Shield, Zap, ArrowLeft, CheckCircle2, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
+// Build API URL properly — uses the backend host in prod, relative /api in dev
+const API_BASE = import.meta.env.VITE_API_BASE_URL
+  ? `${import.meta.env.VITE_API_BASE_URL}/api`
+  : '/api'
+
 // Format phone to E.164 Ghana format
 function toGhanaE164(phone) {
   const digits = phone.replace(/\D/g, '')
@@ -51,7 +56,7 @@ export default function CheckoutPage() {
 
     try {
       // 1. Create order in backend
-      const orderRes = await fetch('/api/orders', {
+      const orderRes = await fetch(`${API_BASE}/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -67,7 +72,7 @@ export default function CheckoutPage() {
       const { order } = await orderRes.json()
 
       // 2. Initialize Paystack payment
-      const payRes = await fetch('/api/payments/initialize', {
+      const payRes = await fetch(`${API_BASE}/payments/initialize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -92,6 +97,7 @@ export default function CheckoutPage() {
       setStep('form')
     }
   }
+
 
   // --- Inline Paystack handler (for when we have the popup SDK) ---
   const handlePaystackInline = () => {

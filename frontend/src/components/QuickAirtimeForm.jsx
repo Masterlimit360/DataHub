@@ -66,8 +66,21 @@ export default function QuickAirtimeForm() {
                 fontSize: '16px', fontWeight: 900,
                 color: network.id === 'mtn' ? '#1a1200' : 'white',
                 boxShadow: selectedNetwork.id === network.id ? `0 4px 15px ${network.colorGlow}` : 'none',
+                overflow: 'hidden',
               }}>
-                {network.initial}
+                {network.logo ? (
+                  <img 
+                    src={network.logo} 
+                    alt={network.name} 
+                    style={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      objectFit: 'cover',
+                    }} 
+                  />
+                ) : (
+                  network.initial
+                )}
               </div>
               <span style={{
                 fontSize: '11px', fontWeight: 700,
