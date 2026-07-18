@@ -99,43 +99,6 @@ export default function CheckoutPage() {
   }
 
 
-  // --- Inline Paystack handler (for when we have the popup SDK) ---
-  const handlePaystackInline = () => {
-    if (!isValidGhanaPhone(phone)) {
-      toast.error('Please enter a valid Ghana phone number (e.g. 0244123456)')
-      return
-    }
-
-    const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY
-    if (!publicKey) {
-      toast.error('Payment configuration missing. Please contact support.')
-      return
-    }
-
-    // Use Paystack inline
-    const handler = window.PaystackPop?.setup({
-      key: publicKey,
-      email: `${phone.replace(/\D/g, '')}@jbdatahub.com`,
-      amount: Math.round(displayAmount * 100),
-      currency: 'GHS',
-      ref: `JB-${Date.now()}`,
-      metadata: {
-        custom_fields: [
-          { display_name: 'Phone', variable_name: 'phone', value: toGhanaE164(phone) },
-          { display_name: 'Network', variable_name: 'network', value: networkSlug },
-          { display_name: 'Bundle', variable_name: 'bundle', value: displayLabel },
-        ]
-      },
-      callback: (response) => {
-        navigate(`/track?ref=${response.reference}&phone=${encodeURIComponent(phone)}`)
-      },
-      onClose: () => {
-        toast('Payment cancelled', { icon: '⚠️' })
-      },
-    })
-    handler?.openIframe()
-  }
-
   return (
     <div style={{ paddingBottom: '80px', paddingTop: '40px' }}>
       <div className="page-container" style={{ maxWidth: '560px' }}>

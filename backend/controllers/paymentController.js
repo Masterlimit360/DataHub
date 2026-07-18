@@ -163,7 +163,7 @@ async function handleWebhook(req, res) {
         await db.query(`
           UPDATE orders 
           SET status = 'failed', updated_at = NOW() 
-          WHERE id = $2
+          WHERE id = $1
         `, [order.id]);
 
         console.error(`[Payment Webhook] Wholesale delivery failed for Order ${order.id}. Error: ${delivery.error}`);

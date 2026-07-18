@@ -3,6 +3,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const apiRouter = require('./routes/api');
+const db = require('./db');
 const { seedAdminIfEmpty } = require('./controllers/authController');
 
 const app = express();
@@ -37,9 +38,27 @@ app.use(express.json({
 
 app.use(express.urlencoded({ extended: true }));
 
-// Healthcheck
-app.get('/health', (req, res) => {
-  res.json({ status: 'UP', timestamp: new Date() });
+// Healthcheck (includes DB connectivity when DATABASE_URL is set)
+app.get('/health', async (req, res) => {
+  const health = { status: 'UP', timestamp: new Date(), services: {} };
+
+  if (!process.env.DATABASE_URL) {
+    health.services.database = 'not_configured';
+  } else {
+    try {
+      await db.query('SELECT 1');
+      health.services.database = 'connected';
+    } catch (error) {
+      health.status = 'DEGRADED';
+      health.services.database = 'error';
+      health.services.database_error = error.message;
+    }
+  }
+
+  health.services.wholesale_provider = process.env.WHOLESALE_PROVIDER || 'mock';
+  health.services.sms_provider = process.env.SMS_PROVIDER || 'giantsms';
+
+  res.json(health);
 });
 
 // Register API Routes

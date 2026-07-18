@@ -48,7 +48,7 @@ export default function AdminDashboard() {
   const { data: statsData } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: () => getAdminStats(),
-    placeholderData: { stats: MOCK_STATS },
+    placeholderData: { kpis: {}, chartData: [], networkShare: [] },
     retry: false,
   })
 
@@ -79,7 +79,21 @@ export default function AdminDashboard() {
     onError: () => toast.error('Refund failed'),
   })
 
-  const stats = statsData?.stats || MOCK_STATS
+  // Transform real API response to UI format
+  const kpis = statsData?.kpis || {}
+  const chartData = (statsData?.chartData || []).map(row => ({
+    day: new Date(row.date).toLocaleDateString('en-US', { weekday: 'short' }),
+    revenue: row.revenue
+  }))
+  
+  const stats = {
+    total_orders: kpis.activeOrders || 0,
+    delivered_orders: kpis.activeOrders || 0,
+    total_revenue: kpis.totalRevenue || 0,
+    today_revenue: kpis.revenueToday || 0,
+    weekly_chart: chartData.length > 0 ? chartData : MOCK_STATS.weekly_chart
+  }
+
   const orders = ordersData?.orders || MOCK_ORDERS
 
   const filteredOrders = orders.filter(o => {
@@ -207,7 +221,7 @@ export default function AdminDashboard() {
                 </button>
               </div>
               <OrdersTable
-                orders={MOCK_ORDERS.slice(0, 5)}
+                orders={orders.slice(0, 5) || MOCK_ORDERS.slice(0, 5)}
                 onRetry={id => retryMut.mutate(id)}
                 onRefund={id => refundMut.mutate(id)}
                 compact

@@ -32,7 +32,7 @@ Matches tooling you already use (React/Vite + Node/Express) with additions speci
 | State/data fetching | TanStack Query (React Query) | Handles polling for order status cleanly |
 | Backend | Node.js + Express | Matches your existing stack |
 | Database | PostgreSQL (via Supabase or Railway) or MongoDB | Relational fits orders/transactions better; Supabase also gives you free file storage + auth if needed later |
-| Payments | Paystack (primary) or Flutterwave | Both support Mobile Money (MTN MoMo, Vodafone Cash, AirtelTigo Money) in Ghana natively |
+| Payments | Paystack | Supports Mobile Money (MTN MoMo, Vodafone Cash, AirtelTigo Money) in Ghana natively |
 | Data/Airtime wholesale | A Ghanaian data reseller API (e.g. one of the aggregators you were already evaluating) — abstract behind an internal `ProviderAdapter` interface so you can swap suppliers without touching the rest of the app | Decouples your app from any single wholesaler |
 | SMS notifications | Hubtel SMS, Arkesel, or mNotify (Ghanaian SMS gateways with local sender ID registration) | For order confirmation + delivery SMS |
 | Hosting (frontend) | Vercel or Netlify | Free tier, auto-deploy from GitHub |
@@ -47,7 +47,7 @@ Matches tooling you already use (React/Vite + Node/Express) with additions speci
 1. Land on homepage → choose network (MTN / Telecel / AirtelTigo).
 2. See bundle list for that network (size, validity, price) **or** switch to "Quick Airtime" and enter a custom amount.
 3. Enter the recipient phone number.
-4. Pay via Paystack/Flutterwave (Mobile Money checkout).
+4. Pay via Paystack (Mobile Money checkout).
 5. On payment webhook success → backend calls wholesale API to deliver the bundle/airtime → sends SMS confirmation.
 6. Customer redirected to a tracking page (`/track?phone=...`) showing order status: `pending → paid → processing → delivered` or `failed → refunded`.
 
@@ -77,7 +77,7 @@ Order
   id, phone_number, network_id (FK), bundle_id (FK, nullable if airtime),
   order_type ("data" | "airtime"), amount_ghs, status
     (pending | paid | processing | delivered | failed | refunded),
-  payment_reference, payment_provider ("paystack" | "flutterwave"),
+  payment_provider "paystack",
   wholesale_reference (id returned by supplier API),
   created_at, updated_at
 
@@ -93,7 +93,7 @@ Transaction (payment log, separate from Order for audit trail)
 ```
 Public:
 POST   /api/orders                 → create order (validates phone, network, bundle/amount)
-POST   /api/payments/initialize    → returns Paystack/Flutterwave checkout URL
+POST   /api/payments/initialize    → returns Paystack checkout URL
 POST   /api/payments/webhook       → payment provider calls this on success/failure
 GET    /api/orders/track?phone=    → returns latest order(s) for that phone number
 GET    /api/networks               → list active networks
@@ -114,7 +114,7 @@ GET    /api/admin/stats            → revenue/order summaries
 This is the heart of the system — get this right first:
 
 1. Payment provider hits `/api/payments/webhook` with a signed payload.
-2. **Verify the signature** (Paystack/Flutterwave both provide HMAC verification — never trust an unverified webhook).
+2. **Verify the signature** (Paystack provides HMAC verification — never trust an unverified webhook).
 3. Look up the `Order` by `payment_reference`.
 4. If already processed (status != `pending`) → return 200 and do nothing (idempotency — webhooks can fire more than once).
 5. Mark order `paid` → call wholesale `ProviderAdapter.deliver(order)`.
@@ -167,8 +167,7 @@ Key UX details worth copying from the reference site:
 ```
 # Backend
 DATABASE_URL=
-PAYSTACK_SECRET_KEY=
-PAYSTACK_WEBHOOK_SECRET=
+PAYSTACK_SECRET_KEY=sk_live_xxxxxxxxxxxxx
 WHOLESALE_API_BASE_URL=
 WHOLESALE_API_KEY=
 SMS_GATEWAY_API_KEY=
@@ -200,7 +199,6 @@ VITE_PAYSTACK_PUBLIC_KEY=
 ## 9. Things to Decide Before You Start Coding
 
 - Which wholesale data/airtime API will you use, and what's their actual API contract (sync vs async delivery, do they have their own webhook)?
-- Paystack vs Flutterwave — compare Mobile Money settlement speed and fees for Ghana specifically.
 - Will you allow airtime-only, or data-only, or both from day one?
 - Do you want a cart (multi-item checkout) later, or keep the single-purchase flow the reference site uses (simpler, faster to build)?
 

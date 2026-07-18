@@ -86,6 +86,33 @@ async function createOrder(req, res) {
 }
 
 /**
+ * Get single order by ID
+ */
+async function getOrderById(req, res) {
+  const { id } = req.params;
+
+  try {
+    const result = await db.query(`
+      SELECT o.*, n.name as network_name, b.label as bundle_label
+      FROM orders o
+      JOIN networks n ON o.network_id = n.id
+      LEFT JOIN bundles b ON o.bundle_id = b.id
+      WHERE o.id = $1
+      LIMIT 1
+    `, [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Order not found.' });
+    }
+
+    return res.json({ order: result.rows[0] });
+  } catch (error) {
+    console.error('[Order Controller] getOrderById error:', error);
+    return res.status(500).json({ error: 'Failed to retrieve order details.' });
+  }
+}
+
+/**
  * Track order by phone number or reference
  */
 async function trackOrders(req, res) {
@@ -288,6 +315,7 @@ async function refundOrder(req, res) {
 
 module.exports = {
   createOrder,
+  getOrderById,
   trackOrders,
   adminGetOrders,
   retryOrder,

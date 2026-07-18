@@ -23,6 +23,7 @@ router.get('/bundles', bundleController.getBundles);
 
 // Checkout & Orders
 router.post('/orders', orderController.createOrder);
+router.get('/orders/:id', orderController.getOrderById);
 router.get('/orders/track', orderController.trackOrders);
 
 // Payments (Paystack)
@@ -51,6 +52,7 @@ router.post('/admin/orders/:id/refund', requireAdmin, orderController.refundOrde
 router.get('/admin/bundles', requireAdmin, bundleController.adminGetBundles);
 router.post('/admin/bundles', requireAdmin, bundleController.createBundle);
 router.put('/admin/bundles/:id', requireAdmin, bundleController.updateBundle);
+router.patch('/admin/bundles/:id', requireAdmin, bundleController.updateBundle);
 
 // Networks management
 router.put('/admin/networks/:id', requireAdmin, bundleController.updateNetwork);
