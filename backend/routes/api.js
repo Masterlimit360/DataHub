@@ -19,6 +19,7 @@ const statsController = require('../controllers/statsController');
 
 // Networks & Bundles
 router.get('/networks', bundleController.getNetworks);
+router.get('/bundles/:id', bundleController.getBundleById);
 router.get('/bundles', bundleController.getBundles);
 
 // Checkout & Orders

@@ -25,12 +25,36 @@ export default function CheckoutPage() {
   const { state } = useLocation()
   const navigate = useNavigate()
 
+  // If state is not present (e.g., on mobile refresh or direct link), try to recover from query params
+  const search = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+  const queryBundleId = search?.get('bundleId')
+  const queryNetwork = search?.get('network')
+
+  // Local state to populate when we recover from query params
+  const [recoveredBundle, setRecoveredBundle] = useState(null)
+  const [recoveredNetworkName, setRecoveredNetworkName] = useState(null)
+
   const [phone, setPhone] = useState(state?.phone || '')
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState('form') // 'form' | 'processing'
 
-  // Guard: if landed here without state, redirect home
-  if (!state) {
+  // Guard: if landed here without state, attempt to recover using query params
+  if (!state && queryBundleId) {
+    // fetch bundle details
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/bundles/${encodeURIComponent(queryBundleId)}`)
+        if (!res.ok) throw new Error('Bundle not found')
+        const { bundle } = await res.json()
+        setRecoveredBundle(bundle)
+        setRecoveredNetworkName(queryNetwork || bundle.network_id)
+      } catch (err) {
+        console.error('Failed to recover bundle from query params', err)
+      }
+    })()
+  }
+
+  if (!state && !recoveredBundle) {
     return (
       <div className="page-container" style={{ padding: '80px 24px', textAlign: 'center' }}>
         <div style={{ fontSize: '48px', marginBottom: '16px' }}>🛒</div>
@@ -41,7 +65,8 @@ export default function CheckoutPage() {
     )
   }
 
-  const { type, bundle, amount, networkSlug, networkName, networkColor } = state
+  const source = state || { type: 'data', bundle: recoveredBundle, networkSlug: queryNetwork, networkName: recoveredNetworkName }
+  const { type, bundle, amount, networkSlug, networkName, networkColor } = source
   const displayAmount = type === 'data' ? bundle?.price_ghs : amount
   const displayLabel  = type === 'data' ? bundle?.label : `GH₵${parseFloat(amount).toFixed(2)} Airtime`
 

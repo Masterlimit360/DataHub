@@ -38,6 +38,21 @@ async function getBundles(req, res) {
 }
 
 /**
+ * Get a single bundle by id
+ */
+async function getBundleById(req, res) {
+  const { id } = req.params;
+  try {
+    const result = await db.query('SELECT * FROM bundles WHERE id = $1', [id]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Bundle not found.' });
+    return res.json({ bundle: result.rows[0] });
+  } catch (error) {
+    console.error('[Bundle Controller] getBundleById error:', error);
+    return res.status(500).json({ error: 'Failed to retrieve bundle.' });
+  }
+}
+
+/**
  * Get all bundles (for admin management)
  */
 async function adminGetBundles(req, res) {
@@ -154,6 +169,7 @@ async function updateNetwork(req, res) {
 module.exports = {
   getNetworks,
   getBundles,
+  getBundleById,
   adminGetBundles,
   createBundle,
   updateBundle,

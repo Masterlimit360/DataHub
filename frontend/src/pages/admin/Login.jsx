@@ -72,7 +72,7 @@ export default function AdminLogin() {
               <label className="input-label" htmlFor="admin-email">Email Address</label>
               <input
                 id="admin-email"
-                type="email"
+                type="text"
                 className="input-field"
                 placeholder="admin@jbdatahub.com"
                 value={email}

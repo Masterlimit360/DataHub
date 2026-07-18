@@ -36,7 +36,8 @@ export default function BundleList({ networkId, networkSlug, networkColor, netwo
   })
 
   const handleBuy = (bundle) => {
-    navigate('/checkout', {
+    // Pass both state and query params so checkout can recover on refresh
+    navigate(`/checkout?network=${encodeURIComponent(networkSlug || '')}&bundleId=${encodeURIComponent(bundle.id)}`, {
       state: {
         type: 'data',
         bundle,
