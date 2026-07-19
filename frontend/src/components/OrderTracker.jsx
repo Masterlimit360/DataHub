@@ -38,7 +38,7 @@ export default function OrderTracker({ order }) {
             Order Reference
           </div>
           <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'monospace', letterSpacing: '0.02em' }}>
-            {order.payment_reference || order.id?.slice(0, 12).toUpperCase() || 'JB-XXXXXX'}
+            {order.payment_reference || order.id?.slice(0, 12).toUpperCase() || 'AJ-XXXXXX'}
           </div>
         </div>
         <div>

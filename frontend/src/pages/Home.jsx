@@ -231,7 +231,7 @@ export default function Home() {
               Ready to stay connected?
             </h2>
             <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '16px', marginBottom: '32px', position: 'relative' }}>
-              Thousands of Ghanaians trust JB DataHub for their daily data needs.
+              Thousands of Ghanaians trust AJ DataHub for their daily data needs.
             </p>
             <a href="#buy-section" className="btn-gold" style={{ fontSize: '16px', padding: '16px 36px', position: 'relative' }}>
               Get Started <ArrowRight size={17} />

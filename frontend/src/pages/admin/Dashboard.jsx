@@ -30,11 +30,11 @@ const MOCK_STATS = {
 }
 
 const MOCK_ORDERS = [
-  { id: '1', phone_number: '0244123456', network_id: 'mtn',        order_type: 'data',    amount_ghs: 10.00, status: 'delivered',  created_at: new Date(Date.now() - 300000).toISOString(), payment_reference: 'JB-001ABC' },
-  { id: '2', phone_number: '0554987321', network_id: 'telecel',    order_type: 'airtime', amount_ghs: 5.00,  status: 'processing', created_at: new Date(Date.now() - 600000).toISOString(), payment_reference: 'JB-002DEF' },
-  { id: '3', phone_number: '0271654897', network_id: 'airteltigo', order_type: 'data',    amount_ghs: 18.00, status: 'failed',     created_at: new Date(Date.now() - 900000).toISOString(), payment_reference: 'JB-003GHI' },
-  { id: '4', phone_number: '0202458963', network_id: 'mtn',        order_type: 'data',    amount_ghs: 30.00, status: 'paid',      created_at: new Date(Date.now() - 1200000).toISOString(), payment_reference: 'JB-004JKL' },
-  { id: '5', phone_number: '0244000111', network_id: 'telecel',    order_type: 'airtime', amount_ghs: 2.50,  status: 'delivered', created_at: new Date(Date.now() - 1500000).toISOString(), payment_reference: 'JB-005MNO' },
+  { id: '1', phone_number: '0244123456', network_id: 'mtn',        order_type: 'data',    amount_ghs: 10.00, status: 'delivered',  created_at: new Date(Date.now() - 300000).toISOString(), payment_reference: 'AJ-001ABC' },
+  { id: '2', phone_number: '0554987321', network_id: 'telecel',    order_type: 'airtime', amount_ghs: 5.00,  status: 'processing', created_at: new Date(Date.now() - 600000).toISOString(), payment_reference: 'AJ-002DEF' },
+  { id: '3', phone_number: '0271654897', network_id: 'airteltigo', order_type: 'data',    amount_ghs: 18.00, status: 'failed',     created_at: new Date(Date.now() - 900000).toISOString(), payment_reference: 'AJ-003GHI' },
+  { id: '4', phone_number: '0202458963', network_id: 'mtn',        order_type: 'data',    amount_ghs: 30.00, status: 'paid',      created_at: new Date(Date.now() - 1200000).toISOString(), payment_reference: 'AJ-004JKL' },
+  { id: '5', phone_number: '0244000111', network_id: 'telecel',    order_type: 'airtime', amount_ghs: 2.50,  status: 'delivered', created_at: new Date(Date.now() - 1500000).toISOString(), payment_reference: 'AJ-005MNO' },
 ]
 
 export default function AdminDashboard() {
@@ -115,7 +115,7 @@ export default function AdminDashboard() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
             <div>
               <h1 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '4px' }}>Admin Dashboard</h1>
-              <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>JB DataHub · Manage orders, bundles & revenue</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>AJ DataHub · Manage orders, bundles & revenue</p>
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button className="btn-ghost" style={{ fontSize: '13px', padding: '9px 16px' }}

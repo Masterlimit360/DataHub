@@ -30,7 +30,7 @@ export default function AdminLogin() {
       }
 
       const { token } = await res.json()
-      localStorage.setItem('jb_admin_token', token)
+      localStorage.setItem('aj_admin_token', token)
       toast.success('Welcome back!')
       navigate('/admin')
     } catch (err) {
@@ -63,7 +63,7 @@ export default function AdminLogin() {
             <Wifi size={28} color="white" />
           </div>
           <h1 className="gradient-text" style={{ fontSize: '24px', fontWeight: 800, marginBottom: '4px' }}>
-            JB DataHub Admin
+            AJ DataHub Admin
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Sign in to manage orders & settings</p>
         </div>
@@ -78,7 +78,7 @@ export default function AdminLogin() {
                 id="admin-email"
                 type="text"
                 className="input-field"
-                placeholder="admin@jbdatahub.com"
+                placeholder="admin@ajdatahub.com"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required

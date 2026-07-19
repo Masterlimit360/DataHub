@@ -1,13 +1,20 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Wifi, Menu, X, Search, LayoutDashboard, LogOut } from 'lucide-react'
+import { Wifi, Menu, X, Search, LayoutDashboard, LogOut, Sun, Moon } from 'lucide-react'
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
-  const isAdmin = !!localStorage.getItem('jb_admin_token')
+  const isAdmin = !!localStorage.getItem('aj_admin_token')
+
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark')
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('theme', theme)
+  }, [theme])
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -18,7 +25,7 @@ export default function Navbar() {
   useEffect(() => setMenuOpen(false), [location.pathname])
 
   const handleLogout = () => {
-    localStorage.removeItem('jb_admin_token')
+    localStorage.removeItem('aj_admin_token')
     navigate('/admin/login')
   }
 
@@ -29,11 +36,9 @@ export default function Navbar() {
         top: 0,
         zIndex: 100,
         transition: 'all 0.3s ease',
-        background: scrolled
-          ? 'rgba(10, 9, 20, 0.92)'
-          : 'transparent',
+        background: scrolled ? 'var(--bg-card)' : 'transparent',
         backdropFilter: scrolled ? 'blur(20px)' : 'none',
-        borderBottom: scrolled ? '1px solid rgba(255,255,255,0.06)' : '1px solid transparent',
+        borderBottom: scrolled ? '1px solid var(--border-subtle)' : '1px solid transparent',
       }}
     >
       <div className="page-container">
@@ -59,7 +64,7 @@ export default function Navbar() {
                 fontSize: '18px', fontWeight: 800, letterSpacing: '-0.03em',
                 background: 'linear-gradient(135deg, #a78bfa, #f59e0b)',
                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-              }}>JB DataHub</span>
+              }}>AJ DataHub</span>
               <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '-2px', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                 Ghana's Data Store
               </div>
@@ -86,6 +91,17 @@ export default function Navbar() {
             <Link to="/track" className="btn-primary" style={{ padding: '10px 20px', fontSize: '13px' }}>
               <Search size={14} /> Track Order
             </Link>
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              style={{
+                background: 'rgba(124,58,237,0.1)', border: '1px solid var(--border-subtle)',
+                color: 'var(--color-primary-light)', padding: '8px', borderRadius: '10px',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}
+              aria-label="Toggle Theme"
+            >
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
           </div>
 
           {/* Mobile hamburger */}
@@ -106,8 +122,8 @@ export default function Navbar() {
       {/* Mobile menu */}
       {menuOpen && (
         <div style={{
-          background: 'rgba(10,9,20,0.97)',
-          borderTop: '1px solid rgba(255,255,255,0.06)',
+          background: 'var(--bg-secondary)',
+          borderTop: '1px solid var(--border-subtle)',
           padding: '16px 24px 24px',
           backdropFilter: 'blur(20px)',
         }} className="animate-fade-in">
@@ -121,6 +137,13 @@ export default function Navbar() {
               </button>
             )}
             {!isAdmin && <MobileNavLink to="/admin/login" label="Admin Login" />}
+            <button 
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="btn-ghost" 
+              style={{ width: '100%', marginTop: '8px' }}
+            >
+              {theme === 'dark' ? <><Sun size={15} /> Light Mode</> : <><Moon size={15} /> Dark Mode</>}
+            </button>
           </div>
         </div>
       )}
@@ -149,11 +172,11 @@ function NavLink({ to, label, current }) {
         borderRadius: '8px',
         fontSize: '14px',
         fontWeight: 500,
-        color: active ? 'white' : 'var(--text-secondary)',
-        background: active ? 'rgba(124,58,237,0.2)' : 'transparent',
+        color: active ? (theme === 'light' ? '#fff' : 'white') : 'var(--text-secondary)',
+        background: active ? 'var(--color-primary)' : 'transparent',
         transition: 'all 0.2s',
       }}
-      onMouseEnter={e => { if (!active) e.target.style.color = 'white' }}
+      onMouseEnter={e => { if (!active) e.target.style.color = 'var(--text-primary)' }}
       onMouseLeave={e => { if (!active) e.target.style.color = 'var(--text-secondary)' }}
     >
       {label}
@@ -169,8 +192,8 @@ function MobileNavLink({ to, label }) {
         textDecoration: 'none', padding: '14px 16px',
         borderRadius: '10px', fontSize: '15px', fontWeight: 500,
         color: 'var(--text-primary)',
-        background: 'rgba(255,255,255,0.04)',
-        border: '1px solid rgba(255,255,255,0.06)',
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border-subtle)',
         display: 'block',
       }}
     >

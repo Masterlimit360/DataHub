@@ -27,7 +27,7 @@ export default function Footer() {
                 <Wifi size={18} color="white" />
               </div>
               <span style={{ fontSize: '17px', fontWeight: 800, letterSpacing: '-0.02em' }} className="gradient-text">
-                JB DataHub
+                AJ DataHub
               </span>
             </div>
             <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.7, maxWidth: '240px' }}>
@@ -101,7 +101,7 @@ export default function Footer() {
           {/* Trust */}
           <div>
             <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '16px' }}>
-              Why JB DataHub?
+              Why AJ DataHub?
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {[
@@ -126,7 +126,7 @@ export default function Footer() {
           flexWrap: 'wrap', gap: '12px',
         }}>
           <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
-            © {new Date().getFullYear()} JB DataHub. All rights reserved.
+            © {new Date().getFullYear()} AJ DataHub. All rights reserved.
           </span>
           <span style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
             Powered by <span style={{ color: 'var(--color-primary-light)' }}>Paystack</span> · <span style={{ color: 'var(--color-primary-light)' }}>Arkesel</span>

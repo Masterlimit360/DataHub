@@ -7,7 +7,7 @@ import { useOrderStatus } from '../hooks/useOrderStatus'
 // Mock order for demo purposes
 const MOCK_ORDER = {
   id: 'mock-001',
-  payment_reference: 'JB-DEMO12345',
+  payment_reference: 'AJ-DEMO12345',
   order_type: 'data',
   network_name: 'MTN Ghana',
   amount_ghs: 10.00,

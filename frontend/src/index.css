@@ -8,6 +8,9 @@
   --bg-secondary: #0f0e1f;
   --bg-card: rgba(255, 255, 255, 0.04);
   --bg-card-hover: rgba(255, 255, 255, 0.07);
+  --bg-input: rgba(255, 255, 255, 0.05);
+  --bg-tab: rgba(255, 255, 255, 0.05);
+  --bg-tab-hover: rgba(255, 255, 255, 0.06);
   --border-subtle: rgba(255, 255, 255, 0.08);
   --border-glow: rgba(139, 92, 246, 0.4);
 
@@ -31,6 +34,33 @@
   --telecel-red-dark: #c0001a;
   --airtel-blue: #e40000;
   --airtel-teal: #0099cc;
+}
+
+[data-theme='light'] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-card: rgba(255, 255, 255, 0.9);
+  --bg-card-hover: #ffffff;
+  --bg-input: #ffffff;
+  --bg-tab: #f1f5f9;
+  --bg-tab-hover: #e2e8f0;
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --border-glow: rgba(139, 92, 246, 0.2);
+
+  --color-primary: #6d28d9;
+  --color-primary-light: #8b5cf6;
+  --color-accent: #d97706;
+  --color-accent-light: #f59e0b;
+  
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+}
+
+[data-theme='light'] body {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(124, 58, 237, 0.08), transparent),
+    radial-gradient(ellipse 50% 30% at 80% 60%, rgba(245, 158, 11, 0.03), transparent);
 }
 
 /* ─── Base Reset ─────────────────────────────────────────────────── */
@@ -189,7 +219,7 @@ h1, h2, h3, h4, h5, h6 {
 .input-field {
   width: 100%;
   padding: 14px 16px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-input);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
   color: var(--text-primary);
@@ -302,7 +332,7 @@ h1, h2, h3, h4, h5, h6 {
 /* ─── Tab Switcher ───────────────────────────────────────────────── */
 .tab-switcher {
   display: flex;
-  background: rgba(255,255,255,0.05);
+  background: var(--bg-tab);
   border-radius: 14px;
   padding: 4px;
   border: 1px solid var(--border-subtle);
@@ -330,7 +360,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .tab-btn:not(.active):hover {
-  background: rgba(255,255,255,0.06);
+  background: var(--bg-tab-hover);
   color: var(--text-primary);
 }
 

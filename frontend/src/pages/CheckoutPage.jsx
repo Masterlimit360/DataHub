@@ -102,7 +102,7 @@ export default function CheckoutPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           order_id: order.id,
-          email: `${phone.replace(/\D/g,'')}@jbdatahub.com`, // Paystack requires email
+          email: `${phone.replace(/\D/g,'')}@ajdatahub.com`, // Paystack requires email
           amount: Math.round(displayAmount * 100), // kobo
           phone_number: toGhanaE164(phone),
           reference: order.payment_reference,
