@@ -10,6 +10,7 @@ const bundleController = require('../controllers/bundleController');
 const orderController = require('../controllers/orderController');
 const paymentController = require('../controllers/paymentController');
 const statsController = require('../controllers/statsController');
+const ussdController = require('../controllers/ussdController');
 
 /**
  * ==========================================
@@ -30,6 +31,9 @@ router.get('/orders/track', orderController.trackOrders);
 // Payments (Paystack)
 router.post('/payments/initialize', paymentController.initializePayment);
 router.post('/payments/webhook', paymentController.handleWebhook);
+
+// USSD
+router.post('/ussd', ussdController.handleUssd);
 
 /**
  * ==========================================
