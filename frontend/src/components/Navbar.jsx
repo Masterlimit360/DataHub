@@ -172,7 +172,7 @@ function NavLink({ to, label, current }) {
         borderRadius: '8px',
         fontSize: '14px',
         fontWeight: 500,
-        color: active ? (theme === 'light' ? '#fff' : 'white') : 'var(--text-secondary)',
+        color: active ? 'white' : 'var(--text-secondary)',
         background: active ? 'var(--color-primary)' : 'transparent',
         transition: 'all 0.2s',
       }}
