@@ -6,7 +6,7 @@ import {
   CheckCircle2, XCircle, Clock, Loader2, Edit2, ToggleLeft, ToggleRight,
   Plus, Wifi, BarChart2, DollarSign, Users,
 } from 'lucide-react'
-import { getAdminOrders, getAdminStats, retryOrder, refundOrder, getAdminBundles, updateBundle, toggleBundle } from '../../api/admin'
+import { getAdminOrders, getAdminStats, retryOrder, refundOrder, completeOrder, getAdminBundles, updateBundle, toggleBundle } from '../../api/admin'
 import toast from 'react-hot-toast'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -77,6 +77,11 @@ export default function AdminDashboard() {
     mutationFn: refundOrder,
     onSuccess: () => { toast.success('Refund initiated'); queryClient.invalidateQueries(['admin-orders']) },
     onError: () => toast.error('Refund failed'),
+  })
+  const completeMut = useMutation({
+    mutationFn: completeOrder,
+    onSuccess: () => { toast.success('Order marked as delivered'); queryClient.invalidateQueries({queryKey: ['admin-orders']}); queryClient.invalidateQueries({queryKey: ['admin-stats']}) },
+    onError: () => toast.error('Failed to complete order'),
   })
 
   // Transform real API response to UI format
@@ -224,6 +229,7 @@ export default function AdminDashboard() {
                 orders={orders.slice(0, 5) || MOCK_ORDERS.slice(0, 5)}
                 onRetry={id => retryMut.mutate(id)}
                 onRefund={id => refundMut.mutate(id)}
+                onComplete={id => completeMut.mutate(id)}
                 compact
               />
             </div>
@@ -267,6 +273,7 @@ export default function AdminDashboard() {
                     orders={filteredOrders}
                     onRetry={id => retryMut.mutate(id)}
                     onRefund={id => refundMut.mutate(id)}
+                    onComplete={id => completeMut.mutate(id)}
                   />
               }
             </div>
@@ -285,7 +292,7 @@ export default function AdminDashboard() {
 }
 
 /* ── Orders Table Component ─────────────────────────────────────── */
-function OrdersTable({ orders, onRetry, onRefund, compact }) {
+function OrdersTable({ orders, onRetry, onRefund, onComplete, compact }) {
   if (!orders || orders.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
@@ -332,6 +339,14 @@ function OrdersTable({ orders, onRetry, onRefund, compact }) {
               {!compact && (
                 <td style={{ padding: '14px 12px' }}>
                   <div style={{ display: 'flex', gap: '6px' }}>
+                    {['pending', 'paid', 'processing'].includes(order.status) && (
+                      <button
+                        onClick={() => onComplete(order.id)}
+                        style={{ padding: '5px 10px', borderRadius: '7px', border: '1px solid rgba(16,185,129,0.3)', background: 'rgba(16,185,129,0.1)', color: '#34d399', fontSize: '11px', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <CheckCircle2 size={11} /> Complete
+                      </button>
+                    )}
                     {order.status === 'failed' && (
                       <button
                         onClick={() => onRetry(order.id)}
@@ -362,6 +377,35 @@ function OrdersTable({ orders, onRetry, onRefund, compact }) {
 
 /* ── Bundles Manager ────────────────────────────────────────────── */
 function BundlesManager({ bundles }) {
+  const queryClient = useQueryClient()
+  const [editingId, setEditingId] = useState(null)
+  const [editData, setEditData] = useState({})
+
+  const toggleMut = useMutation({
+    mutationFn: ({ id, is_active }) => toggleBundle(id, is_active),
+    onSuccess: () => { toast.success('Bundle toggled'); queryClient.invalidateQueries(['admin-bundles']) },
+    onError: () => toast.error('Toggle failed'),
+  })
+
+  const updateMut = useMutation({
+    mutationFn: ({ id, data }) => updateBundle(id, data),
+    onSuccess: () => { 
+      toast.success('Bundle updated'); 
+      setEditingId(null);
+      queryClient.invalidateQueries(['admin-bundles']); 
+    },
+    onError: () => toast.error('Update failed'),
+  })
+
+  const handleEditClick = (bundle) => {
+    setEditingId(bundle.id)
+    setEditData({ price_ghs: bundle.price_ghs, cost_price_ghs: bundle.cost_price_ghs, validity_days: bundle.validity_days, label: bundle.label })
+  }
+
+  const handleSave = (id) => {
+    updateMut.mutate({ id, data: editData })
+  }
+
   const MOCK_BUNDLES = [
     { id: '1', network_id: 'mtn',        label: '1GB',  validity_days: 1,  price_ghs: 2.50,  cost_price_ghs: 1.80, is_active: true },
     { id: '2', network_id: 'mtn',        label: '5GB',  validity_days: 7,  price_ghs: 10.00, cost_price_ghs: 7.50, is_active: true },
@@ -396,39 +440,74 @@ function BundlesManager({ bundles }) {
           </thead>
           <tbody>
             {data.map(bundle => {
-              const margin = ((bundle.price_ghs - bundle.cost_price_ghs) / bundle.cost_price_ghs * 100).toFixed(0)
+              const isEditing = editingId === bundle.id
+              const margin = isEditing
+                ? ((editData.price_ghs - editData.cost_price_ghs) / editData.cost_price_ghs * 100).toFixed(0)
+                : ((bundle.price_ghs - bundle.cost_price_ghs) / bundle.cost_price_ghs * 100).toFixed(0)
+
               return (
                 <tr key={bundle.id}
                   onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
                   <td style={{ padding: '14px 16px', textTransform: 'capitalize', fontWeight: 600 }}>{bundle.network_id}</td>
-                  <td style={{ padding: '14px 16px', fontWeight: 700, fontSize: '16px' }}>{bundle.label}</td>
-                  <td style={{ padding: '14px 16px', color: 'var(--text-secondary)' }}>{bundle.validity_days}d</td>
-                  <td style={{ padding: '14px 16px', color: 'var(--text-muted)' }}>GH₵{bundle.cost_price_ghs}</td>
-                  <td style={{ padding: '14px 16px', fontWeight: 700 }}>GH₵{bundle.price_ghs}</td>
+                  <td style={{ padding: '14px 16px', fontWeight: 700, fontSize: '16px' }}>
+                    {isEditing ? (
+                      <input className="input-field" style={{ padding: '4px 8px', fontSize: '14px' }} value={editData.label} onChange={e => setEditData({...editData, label: e.target.value})} />
+                    ) : bundle.label}
+                  </td>
+                  <td style={{ padding: '14px 16px', color: 'var(--text-secondary)' }}>
+                    {isEditing ? (
+                      <input type="number" className="input-field" style={{ padding: '4px 8px', fontSize: '14px', width: '60px' }} value={editData.validity_days} onChange={e => setEditData({...editData, validity_days: e.target.value})} />
+                    ) : `${bundle.validity_days}d`}
+                  </td>
+                  <td style={{ padding: '14px 16px', color: 'var(--text-muted)' }}>
+                    {isEditing ? (
+                      <input type="number" step="0.01" className="input-field" style={{ padding: '4px 8px', fontSize: '14px', width: '80px' }} value={editData.cost_price_ghs} onChange={e => setEditData({...editData, cost_price_ghs: e.target.value})} />
+                    ) : `GH₵${bundle.cost_price_ghs}`}
+                  </td>
+                  <td style={{ padding: '14px 16px', fontWeight: 700 }}>
+                    {isEditing ? (
+                      <input type="number" step="0.01" className="input-field" style={{ padding: '4px 8px', fontSize: '14px', width: '80px' }} value={editData.price_ghs} onChange={e => setEditData({...editData, price_ghs: e.target.value})} />
+                    ) : `GH₵${bundle.price_ghs}`}
+                  </td>
                   <td style={{ padding: '14px 16px' }}>
                     <span style={{
                       padding: '3px 10px', borderRadius: '100px', fontSize: '12px', fontWeight: 700,
                       background: 'rgba(16,185,129,0.12)', color: '#34d399',
                     }}>
-                      +{margin}%
+                      +{isNaN(margin) ? 0 : margin}%
                     </span>
                   </td>
                   <td style={{ padding: '14px 16px' }}>
-                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: bundle.is_active ? '#34d399' : 'var(--text-muted)' }}>
+                    <button 
+                      onClick={() => toggleMut.mutate({ id: bundle.id, is_active: !bundle.is_active })}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: bundle.is_active ? '#34d399' : 'var(--text-muted)' }}
+                      disabled={toggleMut.isPending}
+                    >
                       {bundle.is_active ? <ToggleRight size={24} /> : <ToggleLeft size={24} />}
                     </button>
                   </td>
                   <td style={{ padding: '14px 16px' }}>
-                    <button style={{
-                      padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)',
-                      background: 'transparent', color: 'var(--text-secondary)',
-                      fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit',
-                      display: 'flex', alignItems: 'center', gap: '5px',
-                    }}>
-                      <Edit2 size={12} /> Edit
-                    </button>
+                    {isEditing ? (
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button onClick={() => handleSave(bundle.id)} disabled={updateMut.isPending} style={{ padding: '6px 12px', borderRadius: '8px', border: 'none', background: 'var(--color-primary)', color: 'white', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                          Save
+                        </button>
+                        <button onClick={() => setEditingId(null)} style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button onClick={() => handleEditClick(bundle)} style={{
+                        padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)',
+                        background: 'transparent', color: 'var(--text-secondary)',
+                        fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit',
+                        display: 'flex', alignItems: 'center', gap: '5px',
+                      }}>
+                        <Edit2 size={12} /> Edit
+                      </button>
+                    )}
                   </td>
                 </tr>
               )

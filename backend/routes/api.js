@@ -52,6 +52,7 @@ router.post('/admin/login', authController.login);
 router.get('/admin/orders', requireAdmin, orderController.adminGetOrders);
 router.post('/admin/orders/:id/retry', requireAdmin, orderController.retryOrder);
 router.post('/admin/orders/:id/refund', requireAdmin, orderController.refundOrder);
+router.post('/admin/orders/:id/complete', requireAdmin, orderController.manualCompleteOrder);
 
 // Bundles management
 router.get('/admin/bundles', requireAdmin, bundleController.adminGetBundles);

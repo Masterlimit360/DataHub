@@ -313,11 +313,61 @@ async function refundOrder(req, res) {
   }
 }
 
+/**
+ * Admin: Manually mark an order as delivered
+ */
+async function manualCompleteOrder(req, res) {
+  const { id } = req.params;
+
+  try {
+    const orderQuery = await db.query('SELECT * FROM orders WHERE id = $1 LIMIT 1', [id]);
+    const order = orderQuery.rows[0];
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found.' });
+    }
+
+    if (order.status === 'delivered') {
+      return res.status(400).json({ error: 'Order is already delivered.' });
+    }
+
+    // Set status to delivered
+    const wholesaleRef = 'MANUAL-' + Date.now();
+    await db.query(`
+      UPDATE orders 
+      SET status = 'delivered', wholesale_reference = $1, updated_at = NOW() 
+      WHERE id = $2
+    `, [wholesaleRef, id]);
+
+    // Fetch bundle details if data
+    let bundle = null;
+    if (order.order_type === 'data' && order.bundle_id) {
+      const bundleQuery = await db.query('SELECT * FROM bundles WHERE id = $1', [order.bundle_id]);
+      bundle = bundleQuery.rows[0];
+    }
+
+    // Send SMS
+    let messageText = '';
+    if (order.order_type === 'data' && bundle) {
+      messageText = `JB-DataHub: Success! ${bundle.label} has been delivered to ${order.phone_number}. Ref: ${wholesaleRef}.`;
+    } else {
+      messageText = `JB-DataHub: Success! GHS ${order.amount_ghs} Airtime has been sent to ${order.phone_number}. Ref: ${wholesaleRef}.`;
+    }
+    await sendSMS(order.phone_number, messageText);
+
+    return res.json({ message: 'Order marked as delivered successfully.', wholesale_reference: wholesaleRef });
+  } catch (error) {
+    console.error('[Order Controller] manualCompleteOrder error:', error);
+    return res.status(500).json({ error: 'Server error marking order as completed.' });
+  }
+}
+
 module.exports = {
   createOrder,
   getOrderById,
   trackOrders,
   adminGetOrders,
   retryOrder,
-  refundOrder
+  refundOrder,
+  manualCompleteOrder
 };

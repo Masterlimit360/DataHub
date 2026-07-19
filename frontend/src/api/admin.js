@@ -14,6 +14,9 @@ export const retryOrder = (id) =>
 export const refundOrder = (id) =>
   client.post(`/admin/orders/${id}/refund`).then((r) => r.data)
 
+export const completeOrder = (id) =>
+  client.post(`/admin/orders/${id}/complete`).then((r) => r.data)
+
 // Bundles (admin)
 export const getAdminBundles = () =>
   client.get('/admin/bundles').then((r) => r.data)
