@@ -8,6 +8,7 @@ const connectionString = process.env.DATABASE_URL ||
 
 const pool = new Pool({
   connectionString,
+  connectionTimeoutMillis: 20000, // Wait up to 20 seconds for Supabase cold starts
   ssl: connectionString && (connectionString.includes('localhost') || connectionString.includes('127.0.0.1'))
     ? false
     : { rejectUnauthorized: false }
