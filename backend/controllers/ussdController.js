@@ -71,7 +71,7 @@ async function handleUssd(req, res) {
       // ---- Step 0: Welcome Menu -> Show Networks ----
       const networksRes = await db.query("SELECT * FROM networks WHERE is_active = true ORDER BY (CASE WHEN name = 'MTN Ghana' THEN 1 ELSE 2 END), name ASC");
       
-      response = "CON Welcome to JB-DataHub\nSelect Network:\n";
+      response = "CON Welcome to AJ-DataHub\nSelect Network:\n";
       networksRes.rows.forEach((net, index) => {
         response += `${index + 1}. ${net.name}\n`;
       });
@@ -190,7 +190,7 @@ async function handleUssd(req, res) {
         // Initialize Paystack Payment
         const secretKey = process.env.PAYSTACK_SECRET_KEY;
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        const dummyEmail = `${targetPhone}@ussd.jbdatahub.com`;
+        const dummyEmail = `${targetPhone}@ussd.ajdatahub.com`;
         
         if (!secretKey || secretKey.startsWith('sk_test_placeholder')) {
            // Fallback for dev environment without valid keys
@@ -217,7 +217,7 @@ async function handleUssd(req, res) {
               // Send SMS with payment link to the USSD session user (using phoneNumber from AT)
               // We'll send to the person dialing the USSD code.
               const callerPhone = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
-              const smsText = `JB-DataHub: Pay GHS ${amountGhs} for ${selectedBundle.label} Data (${targetPhone}). Click to pay: ${authUrl}`;
+              const smsText = `AJ-DataHub: Pay GHS ${amountGhs} for ${selectedBundle.label} Data (${targetPhone}). Click to pay: ${authUrl}`;
               
               await sendSMS(callerPhone, smsText);
               
