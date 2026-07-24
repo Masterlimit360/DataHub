@@ -9,38 +9,43 @@ function createMockRes() {
     },
     send: function(response) {
       console.log(`\n=== USSD RESPONSE ===\n${response}\n=====================\n`);
+    },
+    json: function(response) {
+      console.log(`\n=== USSD JSON RESPONSE ===\n${JSON.stringify(response, null, 2)}\n=====================\n`);
     }
   };
 }
 
-// Mock req object factory
-function createMockReq(text) {
+// Mock req object factory for GiantSMS
+function createMockReq(data, isNew = false) {
   return {
     body: {
-      sessionId: 'test-session',
-      serviceCode: '*384*6014#',
-      phoneNumber: '+233244123456',
-      text: text
+      sessionId: 'test-session-giantsms',
+      msisdn: '233244123456',
+      new: isNew,
+      network: 3,
+      data: data,
+      timestamp: '20230712145113'
     }
   };
 }
 
 async function runTests() {
-  console.log("--- TEST 1: Step 0 (Empty Text) ---");
-  await handleUssd(createMockReq(''), createMockRes());
+  console.log("--- TEST 1: Step 0 (Initial) ---");
+  await handleUssd(createMockReq('*239*239#', true), createMockRes());
 
   console.log("--- TEST 2: Step 1 (Select Network 1) ---");
-  await handleUssd(createMockReq('1'), createMockRes());
+  await handleUssd(createMockReq('1', false), createMockRes());
 
   console.log("--- TEST 3: Step 2 (Select Bundle 1 for Network 1) ---");
-  await handleUssd(createMockReq('1*1'), createMockRes());
+  await handleUssd(createMockReq('1', false), createMockRes());
 
   console.log("--- TEST 4: Step 3 (Enter Target Phone) ---");
-  await handleUssd(createMockReq('1*1*0201234567'), createMockRes());
+  await handleUssd(createMockReq('0201234567', false), createMockRes());
 
   console.log("--- TEST 5: Step 4 (Confirm Purchase) ---");
   // This will try to hit the DB and Paystack APIs
-  await handleUssd(createMockReq('1*1*0201234567*1'), createMockRes());
+  await handleUssd(createMockReq('1', false), createMockRes());
   
   process.exit(0);
 }

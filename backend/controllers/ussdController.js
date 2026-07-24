@@ -9,16 +9,54 @@ function generateOrderReference() {
   return 'JB-' + Date.now() + '-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
+let tableChecked = false;
+
 /**
- * Handle Africa's Talking USSD Webhook
+ * Handle GiantSMS USSD Webhook
  */
 async function handleUssd(req, res) {
-  // Read POST variables from Africa's Talking
-  const { sessionId, serviceCode, phoneNumber, text } = req.body;
-
+  const payload = req.body || {};
+  const data = payload.data || '';
+  const msisdn = payload.msisdn || '';
+  const isNew = payload.new === true || payload.new === 'true' || payload.new === 1;
+  const sessionId = payload.sessionId || '';
+  const phoneNumber = msisdn || payload.phoneNumber || '';
+  
   let response = '';
+  let text = '';
   
   try {
+    if (!tableChecked) {
+      await db.query(`
+        CREATE TABLE IF NOT EXISTS ussd_sessions (
+          session_id VARCHAR(255) PRIMARY KEY,
+          session_data TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      tableChecked = true;
+    }
+
+    if (isNew || data === '*239*239#') {
+      text = '';
+      await db.query(`
+        INSERT INTO ussd_sessions (session_id, session_data) 
+        VALUES ($1, $2)
+        ON CONFLICT (session_id) DO UPDATE SET session_data = EXCLUDED.session_data
+      `, [sessionId, '']);
+    } else {
+      const sessionRes = await db.query('SELECT session_data FROM ussd_sessions WHERE session_id = $1', [sessionId]);
+      if (sessionRes.rows.length === 0) {
+        return res.json({
+          message: "Session expired. Please dial *239*239# again.",
+          reply: false
+        });
+      }
+      const previousText = sessionRes.rows[0].session_data;
+      text = previousText === '' ? data : `${previousText}*${data}`;
+      await db.query('UPDATE ussd_sessions SET session_data = $1 WHERE session_id = $2', [text, sessionId]);
+    }
+
     // If text is empty or not provided, it's the first step
     const textArray = text === '' ? [] : text.split('*');
 
@@ -119,8 +157,7 @@ async function handleUssd(req, res) {
       } else {
         const networksRes = await db.query('SELECT * FROM networks WHERE is_active = true ORDER BY name ASC');
         if (networkIndex < 0 || networkIndex >= networksRes.rows.length) {
-          response = "END Invalid selection.";
-          return res.send(response);
+          return res.json({ message: "Invalid selection.", reply: false });
         }
         
         const selectedNetwork = networksRes.rows[networkIndex];
@@ -130,8 +167,7 @@ async function handleUssd(req, res) {
         );
         
         if (bundleIndex < 0 || bundleIndex >= bundlesRes.rows.length) {
-          response = "END Invalid selection.";
-          return res.send(response);
+          return res.json({ message: "Invalid selection.", reply: false });
         }
         
         const selectedBundle = bundlesRes.rows[bundleIndex];
@@ -196,9 +232,14 @@ async function handleUssd(req, res) {
     response = "END System error. Please try again later.";
   }
 
-  // Africa's Talking expects plain text response starting with CON or END
-  res.set('Content-Type', 'text/plain');
-  res.send(response);
+  // GiantSMS expects JSON response
+  const isEnd = response.startsWith('END');
+  const message = response.replace(/^(CON|END)\s*/, '');
+  
+  res.json({
+    message: message,
+    reply: !isEnd
+  });
 }
 
 module.exports = {

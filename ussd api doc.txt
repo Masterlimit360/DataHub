@@ -1,0 +1,199 @@
+# GiantSMS - USSD Documentation v1.2
+
+This HTTP POST endpoint is used to send a USSD webhook to the specified service API endpoint which you provide, based on this documentation. 
+
+### Menu
+
+- Request
+- Response
+- USSD Simulator
+- Sample Code
+
+### Request
+
+The request should include the following parameters in the raw request body:
+
+- `data` (string): The USSD data submitted by the user's handset.
+- `msisdn` (string): The user's mobile number.
+- `new` (boolean): This returns true when the user first calls the USSD code.
+- `network` (string): The network information.
+- `sessionId` (string): An ID that uniquely distinguishes every session.
+- `timestamp` (string): The date and time of the request in the format YYYYMMDHIS.
+
+**Sample Payload** (initial session, assuming your chosen USSD code is *899*111#)
+
+```jsx
+{
+    "data": "*899*111#",
+    "msisdn": "233242440000",
+    "new": true,
+    "network": 3,
+    "sessionId": "108796521111935",
+    "timestamp": "20230712145113"
+}
+```
+
+(subsequent sessions, assuming the use selected option 1 from the USSD menu list)
+
+```jsx
+{
+    "data": "1",
+    "msisdn": "233242440000",
+    "new": false,
+    "network": 3,
+    "sessionId": "108796521111935",
+    "timestamp": "20230712145114"
+}
+```
+
+### Response
+
+The response to this request will have a status code of 200 and a content type of application/json. The response body will include the following parameters:
+
+- `message` (string): The response message that is sent back to the users’ handset.
+- `reply` (number): A boolean flag indicating whether the USSD session should continue.
+
+**Sample Payload**
+
+```jsx
+{
+    "message": "FREEMAN COLLEGE OF EDUCATION\nHall Week Celebration\n\n1. Enter nominee code\n2. Choose from nominee list",
+    "reply": true
+}
+```
+
+**Reply Format Definition**:
+
+**true** - (This value communicates that the transaction should continue after the current response, and as such a follow-up response from the user accessing the service on his handset)
+
+**false** - (This value communicates that the transaction should not continue after the current response, and as such a follow-up response is not expected from the user accessing the service on his handset)
+
+### USSD Simulator
+
+Find a USSD phone simulator here to test your integration before subscription.
+
+📱 USSD Simulator 👈
+
+### Sample Backend Code
+
+```jsx
+<?php
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405); // Method Not Allowed
+    exit('Only POST requests are allowed');
+}
+
+// Get the raw POST data
+$postData = file_get_contents("php://input");
+
+// Attempt to decode the JSON data
+$jsonData = json_decode($postData, true);
+
+// JSON decoding successful, use the decoded data
+$msisdn = $jsonData['msisdn'];
+$sequenceID = $jsonData['sequenceID'];
+$data = $jsonData['data'];
+$timestamp = $jsonData['timestamp'];
+
+$currentTimestamp = date('YmdHis');
+
+// Sample Logical Processing
+$myObj = new stdClass();
+$myObj->msisdn = $msisdn;
+$myObj->sequenceID = $sequenceID;
+$myObj->timestamp = $currentTimestamp;
+
+if ($data == '*899*111#') {
+    // Option 1
+    $myObj->message = "Welcome to GiantSMS USSD Sandbox\r\n"
+        . "Choose an option\r\n"
+        . "1. Register an account\r\n"
+        . "2. Check balance\r\n"
+        . "3. Claim rewards\r\n";
+    $myObj->reply = true;
+} else if ($data == '1') {
+    // Option 1 selected, provide registration link
+    $myObj->message = "Your registration link will be sent via SMS. Follow the steps to complete registration";
+    $myObj->reply = false;
+} else if ($data == '2') {
+    // Option 2 selected, provide balance information
+    $myObj->message = "Your current balance is GHS 500.00";
+    $myObj->reply = false;
+} else if ($data == '3') {
+    // Option 3 selected, provide rewards information
+    $myObj->message = "You have earned 100 reward points";
+    $myObj->reply = false;
+} else {
+    // Invalid input, prompt for re-entry
+    $myObj->message = "Incorrect input. Try again.";
+    $myObj->reply = false;
+}
+
+// Set the response type to JSON
+header('Content-Type: application/json');
+
+echo json_encode($myObj);
+
+```
+
+```jsx
+<?php
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405); // Method Not Allowed
+    exit('Only POST requests are allowed');
+}
+
+// Get the raw POST data
+$postData = file_get_contents("php://input");
+
+// Attempt to decode the JSON data
+$jsonData = json_decode($postData, true);
+
+// JSON decoding successful, use the decoded data
+$msisdn = $jsonData['msisdn'];
+$sequenceID = $jsonData['sequenceID'];
+$data = $jsonData['data'];
+$timestamp = $jsonData['timestamp'];
+
+$currentTimestamp = date('YmdHis');
+
+// Sample Logical Processing
+$myObj = new stdClass();
+$myObj->msisdn = $msisdn;
+$myObj->sequenceID = $sequenceID;
+$myObj->timestamp = $currentTimestamp;
+
+if ($data == '*899*111#') {
+    // Option 1
+    $myObj->message = "Welcome to GiantSMS USSD Sandbox\r\n"
+        . "Choose an option\r\n"
+        . "1. Register an account\r\n"
+        . "2. Check balance\r\n"
+        . "3. Claim rewards\r\n";
+    $myObj->reply = true;
+} else if ($data == '1') {
+    // Option 1 selected, provide registration link
+    $myObj->message = "Your registration link will be sent via SMS. Follow the steps to complete registration";
+    $myObj->reply = false;
+} else if ($data == '2') {
+    // Option 2 selected, provide balance information
+    $myObj->message = "Your current balance is GHS 500.00";
+    $myObj->reply = false;
+} else if ($data == '3') {
+    // Option 3 selected, provide rewards information
+    $myObj->message = "You have earned 100 reward points";
+    $myObj->reply = false;
+} else {
+    // Invalid input, prompt for re-entry
+    $myObj->message = "Incorrect input. Try again.";
+    $myObj->reply = false;
+}
+
+// Set the response type to JSON
+header('Content-Type: application/json');
+
+echo json_encode($myObj);
+
+```
