@@ -15,11 +15,18 @@ let tableChecked = false;
  * Handle GiantSMS USSD Webhook
  */
 async function handleUssd(req, res) {
-  const payload = req.body || {};
+  let payload = req.body || {};
+  // Fallback for wrong Content-Type headers from GiantSMS
+  if (Object.keys(payload).length === 1 && typeof Object.keys(payload)[0] === 'string' && Object.keys(payload)[0].startsWith('{')) {
+    try { payload = JSON.parse(Object.keys(payload)[0]); } catch(e) {}
+  } else if (Object.keys(payload).length === 0 && typeof req.body === 'string') {
+    try { payload = JSON.parse(req.body); } catch(e) {}
+  }
+
   const data = payload.data || '';
   const msisdn = payload.msisdn || '';
   const isNew = payload.new === true || payload.new === 'true' || payload.new === 1;
-  const sessionId = payload.sessionId || '';
+  const sessionId = payload.sessionId || payload.sequenceID || '';
   const phoneNumber = msisdn || payload.phoneNumber || '';
   
   let response = '';
@@ -62,7 +69,7 @@ async function handleUssd(req, res) {
 
     if (textArray.length === 0) {
       // ---- Step 0: Welcome Menu -> Show Networks ----
-      const networksRes = await db.query('SELECT * FROM networks WHERE is_active = true ORDER BY name ASC');
+      const networksRes = await db.query("SELECT * FROM networks WHERE is_active = true ORDER BY (CASE WHEN name = 'MTN Ghana' THEN 1 ELSE 2 END), name ASC");
       
       response = "CON Welcome to JB-DataHub\nSelect Network:\n";
       networksRes.rows.forEach((net, index) => {
@@ -72,7 +79,7 @@ async function handleUssd(req, res) {
     } else if (textArray.length === 1) {
       // ---- Step 1: Chose Network -> Show Bundles ----
       const networkIndex = parseInt(textArray[0]) - 1;
-      const networksRes = await db.query('SELECT * FROM networks WHERE is_active = true ORDER BY name ASC');
+      const networksRes = await db.query("SELECT * FROM networks WHERE is_active = true ORDER BY (CASE WHEN name = 'MTN Ghana' THEN 1 ELSE 2 END), name ASC");
       
       if (networkIndex < 0 || networkIndex >= networksRes.rows.length) {
         response = "END Invalid network selection.";
@@ -99,7 +106,7 @@ async function handleUssd(req, res) {
       const networkIndex = parseInt(textArray[0]) - 1;
       const bundleIndex = parseInt(textArray[1]) - 1;
       
-      const networksRes = await db.query('SELECT * FROM networks WHERE is_active = true ORDER BY name ASC');
+      const networksRes = await db.query("SELECT * FROM networks WHERE is_active = true ORDER BY (CASE WHEN name = 'MTN Ghana' THEN 1 ELSE 2 END), name ASC");
       
       if (networkIndex < 0 || networkIndex >= networksRes.rows.length) {
         response = "END Invalid selection.";
@@ -123,7 +130,7 @@ async function handleUssd(req, res) {
       const bundleIndex = parseInt(textArray[1]) - 1;
       const targetPhone = textArray[2];
       
-      const networksRes = await db.query('SELECT * FROM networks WHERE is_active = true ORDER BY name ASC');
+      const networksRes = await db.query("SELECT * FROM networks WHERE is_active = true ORDER BY (CASE WHEN name = 'MTN Ghana' THEN 1 ELSE 2 END), name ASC");
       
       if (networkIndex < 0 || networkIndex >= networksRes.rows.length) {
         response = "END Invalid selection.";
@@ -155,7 +162,7 @@ async function handleUssd(req, res) {
       if (confirmChoice !== '1') {
         response = "END Purchase cancelled.";
       } else {
-        const networksRes = await db.query('SELECT * FROM networks WHERE is_active = true ORDER BY name ASC');
+        const networksRes = await db.query("SELECT * FROM networks WHERE is_active = true ORDER BY (CASE WHEN name = 'MTN Ghana' THEN 1 ELSE 2 END), name ASC");
         if (networkIndex < 0 || networkIndex >= networksRes.rows.length) {
           return res.json({ message: "Invalid selection.", reply: false });
         }
