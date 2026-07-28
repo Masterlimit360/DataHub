@@ -80,6 +80,8 @@ export default function CheckoutPage() {
     setStep('processing')
 
     try {
+      const userInfo = JSON.parse(localStorage.getItem('aj_user_info') || '{}')
+
       // 1. Create order in backend
       const orderRes = await fetch(`${API_BASE}/orders`, {
         method: 'POST',
@@ -90,6 +92,7 @@ export default function CheckoutPage() {
           bundle_id: type === 'data' ? bundle?.id : null,
           order_type: type,
           amount_ghs: displayAmount,
+          user_id: userInfo.id || undefined
         }),
       })
 
@@ -214,7 +217,7 @@ export default function CheckoutPage() {
           style={{ width: '100%', fontSize: '17px', padding: '18px', borderRadius: '14px', marginBottom: '16px' }}
         >
           {loading ? (
-            <><Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Processing...</>
+            <><Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Loading...</>
           ) : (
             <><Shield size={17} /> Pay GH₵{parseFloat(displayAmount).toFixed(2)} with Paystack</>
           )}

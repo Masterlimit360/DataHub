@@ -7,6 +7,9 @@ import CheckoutPage from './pages/CheckoutPage'
 import TrackPage from './pages/TrackPage'
 import AdminLogin from './pages/admin/Login'
 import AdminDashboard from './pages/admin/Dashboard'
+import Signup from './pages/Signup'
+import UserLogin from './pages/UserLogin'
+import UserDashboard from './pages/UserDashboard'
 import ProtectedRoute from './components/ProtectedRoute'
 import ScrollToTop from './components/ScrollToTop'
 
@@ -21,6 +24,9 @@ export default function App() {
           <Route path="/bundles/:network" element={<BundlesPage />} />
           <Route path="/checkout"    element={<CheckoutPage />} />
           <Route path="/track"       element={<TrackPage />} />
+          <Route path="/signup"      element={<Signup />} />
+          <Route path="/login"       element={<UserLogin />} />
+          <Route path="/dashboard"   element={<UserDashboard />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin"       element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
           <Route path="*"            element={<Navigate to="/" replace />} />

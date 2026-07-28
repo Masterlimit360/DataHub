@@ -24,7 +24,26 @@ function requireAdmin(req, res, next) {
   }
 }
 
+function requireUser(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Authentication token missing or invalid format.' });
+  }
+
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    console.error('[Auth Middleware] Token verification failed:', error.message);
+    return res.status(401).json({ error: 'Session expired or token invalid. Please log in again.' });
+  }
+}
+
 module.exports = {
   requireAdmin,
+  requireUser,
   JWT_SECRET
 };

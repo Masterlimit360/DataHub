@@ -8,6 +8,7 @@ export default function Navbar() {
   const location = useLocation()
   const navigate = useNavigate()
   const isAdmin = !!localStorage.getItem('aj_admin_token')
+  const isUser = !!localStorage.getItem('aj_user_token')
 
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark')
 
@@ -83,6 +84,15 @@ export default function Navbar() {
                 </button>
               </>
             )}
+            {isUser && !isAdmin && (
+              <NavLink to="/dashboard" label="Dashboard" current={location.pathname} />
+            )}
+            {!isAdmin && !isUser && (
+              <>
+                <NavLink to="/login" label="Log In" current={location.pathname} />
+                <NavLink to="/signup" label="Sign Up" current={location.pathname} />
+              </>
+            )}
             {!isAdmin && (
               <Link to="/admin/login" className="btn-ghost" style={{ padding: '8px 14px', fontSize: '13px', textDecoration: 'none' }}>
                 <LayoutDashboard size={14} /> Admin
@@ -130,7 +140,14 @@ export default function Navbar() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <MobileNavLink to="/" label="Home" />
             <MobileNavLink to="/track" label="Track Order" />
-            {isAdmin && <MobileNavLink to="/admin" label="Dashboard" />}
+            {isAdmin && <MobileNavLink to="/admin" label="Admin Dashboard" />}
+            {isUser && !isAdmin && <MobileNavLink to="/dashboard" label="Dashboard" />}
+            {!isAdmin && !isUser && (
+              <>
+                <MobileNavLink to="/login" label="Log In" />
+                <MobileNavLink to="/signup" label="Sign Up" />
+              </>
+            )}
             {isAdmin && (
               <button className="btn-ghost" onClick={handleLogout} style={{ width: '100%', marginTop: '8px' }}>
                 <LogOut size={15} /> Logout

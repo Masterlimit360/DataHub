@@ -24,7 +24,7 @@ function isValidGhanaPhone(phone) {
  * Create a new pending order
  */
 async function createOrder(req, res) {
-  const { phone_number, network_id, bundle_id, order_type, amount_ghs } = req.body;
+  const { phone_number, network_id, bundle_id, order_type, amount_ghs, user_id } = req.body;
 
   // Basic validations
   if (!phone_number || !network_id || !order_type) {
@@ -70,10 +70,10 @@ async function createOrder(req, res) {
 
     // Insert order into db as 'pending'
     const result = await db.query(`
-      INSERT INTO orders (phone_number, network_id, bundle_id, order_type, amount_ghs, status, payment_reference)
-      VALUES ($1, $2, $3, $4, $5, 'pending', $6)
+      INSERT INTO orders (phone_number, network_id, bundle_id, order_type, amount_ghs, status, payment_reference, user_id)
+      VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7)
       RETURNING *
-    `, [phone_number, network_id, resolvedBundleId, order_type, finalAmount, ref]);
+    `, [phone_number, network_id, resolvedBundleId, order_type, finalAmount, ref, user_id || null]);
 
     return res.status(201).json({
       message: 'Order created successfully.',
@@ -161,6 +161,29 @@ async function trackOrders(req, res) {
   } catch (error) {
     console.error('[Order Controller] trackOrders error:', error);
     return res.status(500).json({ error: 'Failed to retrieve order tracking information.' });
+  }
+}
+
+/**
+ * Get orders for logged in user
+ */
+async function getUserOrders(req, res) {
+  const userId = req.user.id;
+
+  try {
+    const result = await db.query(`
+      SELECT o.*, n.name as network_name, b.label as bundle_label
+      FROM orders o
+      JOIN networks n ON o.network_id = n.id
+      LEFT JOIN bundles b ON o.bundle_id = b.id
+      WHERE o.user_id = $1
+      ORDER BY o.created_at DESC
+    `, [userId]);
+
+    return res.json({ orders: result.rows });
+  } catch (error) {
+    console.error('[Order Controller] getUserOrders error:', error);
+    return res.status(500).json({ error: 'Failed to retrieve user orders.' });
   }
 }
 
@@ -369,5 +392,6 @@ module.exports = {
   adminGetOrders,
   retryOrder,
   refundOrder,
-  manualCompleteOrder
+  manualCompleteOrder,
+  getUserOrders
 };

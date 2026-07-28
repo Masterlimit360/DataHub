@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 // Middlewares
-const { requireAdmin } = require('../middleware/auth');
+const { requireAdmin, requireUser } = require('../middleware/auth');
 
 // Controllers
 const authController = require('../controllers/authController');
@@ -25,8 +25,8 @@ router.get('/bundles', bundleController.getBundles);
 
 // Checkout & Orders
 router.post('/orders', orderController.createOrder);
-router.get('/orders/:id', orderController.getOrderById);
 router.get('/orders/track', orderController.trackOrders);
+router.get('/orders/:id', orderController.getOrderById);
 
 // Payments (Paystack)
 router.post('/payments/initialize', paymentController.initializePayment);
@@ -37,10 +37,19 @@ router.post('/ussd', ussdController.handleUssd);
 
 /**
  * ==========================================
- * ADMIN AUTHENTICATION
+ * AUTHENTICATION (Admin & User)
  * ==========================================
  */
+router.post('/auth/login', authController.login);
+router.post('/auth/signup', authController.signup);
 router.post('/admin/login', authController.login);
+
+/**
+ * ==========================================
+ * PROTECTED USER ENDPOINTS
+ * ==========================================
+ */
+router.get('/user/orders', requireUser, orderController.getUserOrders);
 
 /**
  * ==========================================

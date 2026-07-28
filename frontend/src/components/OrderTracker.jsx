@@ -1,7 +1,7 @@
 import { CheckCircle2, Clock, Loader2, XCircle, RefreshCcw, Package } from 'lucide-react'
 
 const STEPS = [
-  { key: 'pending',    label: 'Order Placed',  icon: Package,       desc: 'We received your order' },
+  { key: 'pending',    label: 'Awaiting Payment',  icon: Package,       desc: 'Payment not yet confirmed' },
   { key: 'paid',       label: 'Payment Confirmed', icon: CheckCircle2, desc: 'Payment verified by Paystack' },
   { key: 'processing', label: 'Processing',    icon: Loader2,       desc: 'Sending to your number' },
   { key: 'delivered',  label: 'Delivered',     icon: CheckCircle2,  desc: 'Data sent successfully!' },
@@ -184,7 +184,7 @@ function DetailItem({ label, value }) {
 
 function StatusBadge({ status }) {
   const map = {
-    pending:    { label: 'Pending',    cls: 'badge-pending' },
+    pending:    { label: 'Awaiting Payment',    cls: 'badge-pending' },
     paid:       { label: 'Paid',       cls: 'badge-paid' },
     processing: { label: 'Processing', cls: 'badge-processing' },
     delivered:  { label: 'Delivered',  cls: 'badge-delivered' },
