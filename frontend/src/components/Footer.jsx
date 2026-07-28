@@ -34,7 +34,7 @@ export default function Footer() {
               Ghana's trusted data & airtime store. Instant delivery, secure payments.
             </p>
             <a
-              href="https://wa.me/233000000000"
+              href="https://wa.me/233556130767"
               target="_blank"
               rel="noreferrer"
               style={{
