@@ -205,3 +205,4 @@ VITE_PAYSTACK_PUBLIC_KEY=
 ---
 
 *This document is a build spec, not a legal or financial recommendation. Verify wholesale API terms, SMS sender ID registration requirements (NCA in Ghana), and payment provider compliance requirements before going live.*
+Change in paystack

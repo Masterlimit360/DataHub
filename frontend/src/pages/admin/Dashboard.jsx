@@ -6,7 +6,7 @@ import {
   CheckCircle2, XCircle, Clock, Loader2, Edit2, ToggleLeft, ToggleRight,
   Plus, Wifi, BarChart2, DollarSign, Users,
 } from 'lucide-react'
-import { getAdminOrders, getAdminStats, retryOrder, refundOrder, completeOrder, getAdminBundles, updateBundle, toggleBundle } from '../../api/admin'
+import { getAdminOrders, getAdminStats, retryOrder, refundOrder, completeOrder, getAdminBundles, createBundle, updateBundle, toggleBundle } from '../../api/admin'
 import toast from 'react-hot-toast'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -380,6 +380,8 @@ function BundlesManager({ bundles }) {
   const queryClient = useQueryClient()
   const [editingId, setEditingId] = useState(null)
   const [editData, setEditData] = useState({})
+  const [isAdding, setIsAdding] = useState(false)
+  const [newData, setNewData] = useState({ network_id: 'mtn', label: '', size_mb: '', validity_days: '', cost_price_ghs: '', price_ghs: '' })
 
   const toggleMut = useMutation({
     mutationFn: ({ id, is_active }) => toggleBundle(id, is_active),
@@ -395,6 +397,17 @@ function BundlesManager({ bundles }) {
       queryClient.invalidateQueries(['admin-bundles']); 
     },
     onError: () => toast.error('Update failed'),
+  })
+
+  const createMut = useMutation({
+    mutationFn: (data) => createBundle(data),
+    onSuccess: () => {
+      toast.success('Bundle added successfully')
+      setIsAdding(false)
+      setNewData({ network_id: 'mtn', label: '', size_mb: '', validity_days: '', cost_price_ghs: '', price_ghs: '' })
+      queryClient.invalidateQueries(['admin-bundles'])
+    },
+    onError: () => toast.error('Failed to create bundle'),
   })
 
   const handleEditClick = (bundle) => {
@@ -419,10 +432,116 @@ function BundlesManager({ bundles }) {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <h2 style={{ fontSize: '20px', fontWeight: 800 }}>Bundle Management</h2>
-        <button className="btn-primary" style={{ fontSize: '13px', padding: '10px 18px' }}>
+        <button onClick={() => setIsAdding(true)} className="btn-primary" style={{ fontSize: '13px', padding: '10px 18px' }}>
           <Plus size={15} /> Add Bundle
         </button>
       </div>
+
+      {isAdding && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+          padding: '20px',
+        }}>
+          <div className="glass-card animate-fade-in" style={{ width: '100%', maxWidth: '480px', padding: '32px', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <h3 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '24px' }}>Add New Bundle</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label className="input-label">Network</label>
+                <select 
+                  className="input-field" 
+                  value={newData.network_id} 
+                  onChange={e => setNewData({...newData, network_id: e.target.value})}
+                  style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '10px 14px', color: 'white' }}
+                >
+                  <option value="mtn" style={{ background: '#1a1730' }}>MTN</option>
+                  <option value="telecel" style={{ background: '#1a1730' }}>Telecel</option>
+                  <option value="airteltigo" style={{ background: '#1a1730' }}>AirtelTigo</option>
+                </select>
+              </div>
+              <div>
+                <label className="input-label">Label (e.g. 5GB)</label>
+                <input 
+                  className="input-field" 
+                  value={newData.label} 
+                  onChange={e => setNewData({...newData, label: e.target.value})}
+                  placeholder="e.g. 5GB"
+                />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label className="input-label">Size (MB)</label>
+                  <input 
+                    type="number" 
+                    className="input-field" 
+                    value={newData.size_mb} 
+                    onChange={e => setNewData({...newData, size_mb: e.target.value})}
+                    placeholder="e.g. 5120"
+                  />
+                </div>
+                <div>
+                  <label className="input-label">Validity (Days)</label>
+                  <input 
+                    type="number" 
+                    className="input-field" 
+                    value={newData.validity_days} 
+                    onChange={e => setNewData({...newData, validity_days: e.target.value})}
+                    placeholder="e.g. 7"
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label className="input-label">Cost Price (GH₵)</label>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    className="input-field" 
+                    value={newData.cost_price_ghs} 
+                    onChange={e => setNewData({...newData, cost_price_ghs: e.target.value})}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label className="input-label">Sale Price (GH₵)</label>
+                  <input 
+                    type="number" 
+                    step="0.01" 
+                    className="input-field" 
+                    value={newData.price_ghs} 
+                    onChange={e => setNewData({...newData, price_ghs: e.target.value})}
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
+                <button 
+                  onClick={() => createMut.mutate({
+                    network_id: newData.network_id,
+                    label: newData.label,
+                    size_mb: parseInt(newData.size_mb),
+                    validity_days: parseInt(newData.validity_days),
+                    cost_price_ghs: parseFloat(newData.cost_price_ghs),
+                    price_ghs: parseFloat(newData.price_ghs)
+                  })}
+                  disabled={createMut.isPending || !newData.label || !newData.size_mb || !newData.cost_price_ghs || !newData.price_ghs}
+                  className="btn-primary" 
+                  style={{ flex: 1, padding: '12px' }}
+                >
+                  {createMut.isPending ? 'Saving...' : 'Save Bundle'}
+                </button>
+                <button 
+                  onClick={() => setIsAdding(false)} 
+                  className="btn-ghost" 
+                  style={{ flex: 1, padding: '12px' }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ overflowX: 'auto' }} className="glass-card">
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
