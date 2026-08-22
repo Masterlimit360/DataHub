@@ -173,12 +173,130 @@ async function handleWebhook(req, res) {
         await sendSMS(order.phone_number, failMessage);
       }
     }
+
+    // Handle failed/cancelled payments from Paystack
+    if (event === 'charge.failed') {
+      const paymentRef = data.reference;
+      const providerRef = data.id;
+
+      const orderQuery = await db.query('SELECT * FROM orders WHERE payment_reference = $1 LIMIT 1', [paymentRef]);
+      const order = orderQuery.rows[0];
+
+      if (!order) {
+        console.error(`[Payment Webhook] charge.failed - Order with reference ${paymentRef} not found.`);
+        return;
+      }
+
+      if (order.status !== 'pending') {
+        console.log(`[Payment Webhook] charge.failed - Order ${order.id} is already '${order.status}'. Skipping.`);
+        return;
+      }
+
+      // Log the failed transaction
+      await db.query(`
+        INSERT INTO transactions (order_id, provider_reference, amount_ghs, status, raw_payload)
+        VALUES ($1, $2, $3, $4, $5)
+      `, [order.id, String(providerRef), parseFloat(order.amount_ghs), 'cancelled', payload]);
+
+      // Mark order as cancelled
+      await db.query('UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2', ['cancelled', order.id]);
+      console.log(`[Payment Webhook] Order ${order.id} marked as CANCELLED (payment failed/abandoned).`);
+    }
   } catch (error) {
     console.error('[Payment Webhook] Error processing payment webhook:', error);
   }
 }
 
+/**
+ * Verify payment status for a pending order by checking with Paystack.
+ * If the payment was never completed (abandoned/cancelled), mark the order as cancelled.
+ */
+async function verifyPayment(req, res) {
+  const { reference } = req.params;
+
+  if (!reference) {
+    return res.status(400).json({ error: 'Payment reference is required.' });
+  }
+
+  try {
+    // 1. Look up the order
+    const orderQuery = await db.query('SELECT * FROM orders WHERE payment_reference = $1 LIMIT 1', [reference]);
+    const order = orderQuery.rows[0];
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found.' });
+    }
+
+    // Only verify pending orders — already processed orders don't need checking
+    if (order.status !== 'pending') {
+      return res.json({ order, message: `Order is already '${order.status}'.` });
+    }
+
+    // 2. Check with Paystack
+    const secretKey = process.env.PAYSTACK_SECRET_KEY;
+
+    if (!secretKey || secretKey.startsWith('sk_test_placeholder')) {
+      // In dev/test mode without Paystack keys, can't verify
+      return res.json({ order, message: 'Payment verification unavailable (no Paystack key).' });
+    }
+
+    const paystackRes = await axios.get(
+      `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${secretKey}`,
+        },
+        timeout: 10000,
+      }
+    );
+
+    const txData = paystackRes.data?.data;
+
+    if (!txData) {
+      // Paystack returned no transaction data — payment was never initiated or abandoned
+      await db.query('UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2', ['cancelled', order.id]);
+      const updatedQuery = await db.query('SELECT * FROM orders WHERE id = $1', [order.id]);
+      return res.json({ order: updatedQuery.rows[0], message: 'Payment was never completed. Order cancelled.' });
+    }
+
+    const paystackStatus = txData.status; // 'success', 'failed', 'abandoned'
+
+    if (paystackStatus === 'success') {
+      // Payment was successful but webhook may not have fired — process it now
+      // (The webhook handler has idempotency checks, but let's update directly here)
+      if (order.status === 'pending') {
+        await db.query('UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2', ['paid', order.id]);
+        console.log(`[Payment Verify] Order ${order.id} confirmed as PAID via verification.`);
+      }
+      const updatedQuery = await db.query('SELECT * FROM orders WHERE id = $1', [order.id]);
+      return res.json({ order: updatedQuery.rows[0], message: 'Payment confirmed.' });
+    } else if (paystackStatus === 'abandoned' || paystackStatus === 'failed') {
+      // Payment was cancelled/abandoned by user
+      await db.query('UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2', ['cancelled', order.id]);
+      console.log(`[Payment Verify] Order ${order.id} marked as CANCELLED (Paystack status: ${paystackStatus}).`);
+      const updatedQuery = await db.query('SELECT * FROM orders WHERE id = $1', [order.id]);
+      return res.json({ order: updatedQuery.rows[0], message: `Payment ${paystackStatus}. Order cancelled.` });
+    } else {
+      // Some other status — return current state
+      return res.json({ order, message: `Paystack status: ${paystackStatus}. No action taken.` });
+    }
+  } catch (error) {
+    // If Paystack returns 404, the transaction was never initiated
+    if (error.response?.status === 404) {
+      try {
+        await db.query('UPDATE orders SET status = $1, updated_at = NOW() WHERE payment_reference = $2', ['cancelled', reference]);
+      } catch (dbErr) {
+        // Ignore DB error
+      }
+      return res.json({ message: 'Transaction not found on Paystack. Payment was never initiated.' });
+    }
+    console.error('[Payment Verify] Error:', error.response?.data || error.message);
+    return res.status(500).json({ error: 'Failed to verify payment status.' });
+  }
+}
+
 module.exports = {
   initializePayment,
-  handleWebhook
+  handleWebhook,
+  verifyPayment
 };

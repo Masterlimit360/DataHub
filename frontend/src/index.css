@@ -267,6 +267,7 @@ h1, h2, h3, h4, h5, h6 {
 .badge-delivered { background: rgba(16,185,129,0.15); color: #6ee7b7; }
 .badge-failed    { background: rgba(239,68,68,0.15);  color: #fca5a5; }
 .badge-refunded  { background: rgba(156,163,175,0.15);color: #d1d5db; }
+.badge-cancelled { background: rgba(251,146,60,0.15); color: #fb923c; }
 
 /* ─── Scrollbar ──────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }

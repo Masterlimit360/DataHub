@@ -31,6 +31,7 @@ router.get('/orders/:id', orderController.getOrderById);
 // Payments (Paystack)
 router.post('/payments/initialize', paymentController.initializePayment);
 router.post('/payments/webhook', paymentController.handleWebhook);
+router.get('/payments/verify/:reference', paymentController.verifyPayment);
 
 // USSD
 router.post('/ussd', ussdController.handleUssd);
@@ -62,6 +63,7 @@ router.get('/admin/orders', requireAdmin, orderController.adminGetOrders);
 router.post('/admin/orders/:id/retry', requireAdmin, orderController.retryOrder);
 router.post('/admin/orders/:id/refund', requireAdmin, orderController.refundOrder);
 router.post('/admin/orders/:id/complete', requireAdmin, orderController.manualCompleteOrder);
+router.post('/admin/orders/:id/cancel', requireAdmin, orderController.cancelOrder);
 
 // Bundles management
 router.get('/admin/bundles', requireAdmin, bundleController.adminGetBundles);

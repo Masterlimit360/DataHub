@@ -6,7 +6,7 @@ import {
   CheckCircle2, XCircle, Clock, Loader2, Edit2, ToggleLeft, ToggleRight,
   Plus, Wifi, BarChart2, DollarSign, Users,
 } from 'lucide-react'
-import { getAdminOrders, getAdminStats, retryOrder, refundOrder, completeOrder, getAdminBundles, createBundle, updateBundle, toggleBundle } from '../../api/admin'
+import { getAdminOrders, getAdminStats, retryOrder, refundOrder, completeOrder, cancelOrder, getAdminBundles, createBundle, updateBundle, toggleBundle } from '../../api/admin'
 import toast from 'react-hot-toast'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -82,6 +82,11 @@ export default function AdminDashboard() {
     mutationFn: completeOrder,
     onSuccess: () => { toast.success('Order marked as delivered'); queryClient.invalidateQueries({queryKey: ['admin-orders']}); queryClient.invalidateQueries({queryKey: ['admin-stats']}) },
     onError: () => toast.error('Failed to complete order'),
+  })
+  const cancelMut = useMutation({
+    mutationFn: cancelOrder,
+    onSuccess: () => { toast.success('Order cancelled'); queryClient.invalidateQueries({queryKey: ['admin-orders']}); queryClient.invalidateQueries({queryKey: ['admin-stats']}) },
+    onError: (err) => toast.error(err?.response?.data?.error || 'Failed to cancel order'),
   })
 
   // Transform real API response to UI format
@@ -230,6 +235,7 @@ export default function AdminDashboard() {
                 onRetry={id => retryMut.mutate(id)}
                 onRefund={id => refundMut.mutate(id)}
                 onComplete={id => completeMut.mutate(id)}
+                onCancel={id => cancelMut.mutate(id)}
                 compact
               />
             </div>
@@ -253,7 +259,7 @@ export default function AdminDashboard() {
                 />
               </div>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {['all', 'pending', 'paid', 'processing', 'delivered', 'failed', 'refunded'].map(s => (
+                {['all', 'pending', 'paid', 'processing', 'delivered', 'failed', 'cancelled', 'refunded'].map(s => (
                   <button key={s} onClick={() => setStatusFilter(s)} style={{
                     padding: '8px 14px', borderRadius: '100px', border: `1px solid ${statusFilter === s ? 'var(--color-primary)' : 'rgba(255,255,255,0.1)'}`,
                     background: statusFilter === s ? 'rgba(124,58,237,0.15)' : 'transparent',
@@ -274,6 +280,7 @@ export default function AdminDashboard() {
                     onRetry={id => retryMut.mutate(id)}
                     onRefund={id => refundMut.mutate(id)}
                     onComplete={id => completeMut.mutate(id)}
+                    onCancel={id => cancelMut.mutate(id)}
                   />
               }
             </div>
@@ -292,7 +299,7 @@ export default function AdminDashboard() {
 }
 
 /* ── Orders Table Component ─────────────────────────────────────── */
-function OrdersTable({ orders, onRetry, onRefund, onComplete, compact }) {
+function OrdersTable({ orders, onRetry, onRefund, onComplete, onCancel, compact }) {
   if (!orders || orders.length === 0) {
     return (
       <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
@@ -345,6 +352,14 @@ function OrdersTable({ orders, onRetry, onRefund, onComplete, compact }) {
                         style={{ padding: '5px 10px', borderRadius: '7px', border: '1px solid rgba(16,185,129,0.3)', background: 'rgba(16,185,129,0.1)', color: '#34d399', fontSize: '11px', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '4px' }}
                       >
                         <CheckCircle2 size={11} /> Complete
+                      </button>
+                    )}
+                    {order.status === 'pending' && (
+                      <button
+                        onClick={() => onCancel(order.id)}
+                        style={{ padding: '5px 10px', borderRadius: '7px', border: '1px solid rgba(251,146,60,0.3)', background: 'rgba(251,146,60,0.1)', color: '#fb923c', fontSize: '11px', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <XCircle size={11} /> Cancel
                       </button>
                     )}
                     {order.status === 'failed' && (
@@ -647,6 +662,7 @@ function StatusBadge({ status }) {
     delivered:  'badge-delivered',
     failed:     'badge-failed',
     refunded:   'badge-refunded',
+    cancelled:  'badge-cancelled',
   }
   return (
     <span className={`badge ${map[status] || 'badge-pending'}`}>

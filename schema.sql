@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS orders (
     bundle_id INTEGER REFERENCES bundles(id) ON DELETE SET NULL,
     order_type TEXT NOT NULL CHECK (order_type IN ('data', 'airtime')),
     amount_ghs DECIMAL(10, 2) NOT NULL,
-    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'processing', 'delivered', 'failed', 'refunded')),
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'processing', 'delivered', 'failed', 'refunded', 'cancelled')),
     payment_reference TEXT UNIQUE NOT NULL,
     payment_provider TEXT NOT NULL DEFAULT 'paystack',
     wholesale_reference TEXT,

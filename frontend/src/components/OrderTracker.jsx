@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock, Loader2, XCircle, RefreshCcw, Package } from 'lucide-react'
+import { CheckCircle2, Clock, Loader2, XCircle, RefreshCcw, Package, Ban } from 'lucide-react'
 
 const STEPS = [
   { key: 'pending',    label: 'Awaiting Payment',  icon: Package,       desc: 'Payment not yet confirmed' },
@@ -10,7 +10,7 @@ const STEPS = [
 const STATUS_ORDER = ['pending', 'paid', 'processing', 'delivered']
 
 function getStepIndex(status) {
-  if (status === 'failed' || status === 'refunded') return -1
+  if (status === 'failed' || status === 'refunded' || status === 'cancelled') return -1
   return STATUS_ORDER.indexOf(status)
 }
 
@@ -20,6 +20,7 @@ export default function OrderTracker({ order }) {
   const currentIndex = getStepIndex(order.status)
   const isFailed = order.status === 'failed'
   const isRefunded = order.status === 'refunded'
+  const isCancelled = order.status === 'cancelled'
 
   return (
     <div style={{
@@ -57,25 +58,29 @@ export default function OrderTracker({ order }) {
         <DetailItem label="Phone"   value={maskPhone(order.phone_number)} />
       </div>
 
-      {/* Failed / Refunded state */}
-      {(isFailed || isRefunded) ? (
+      {/* Failed / Refunded / Cancelled state */}
+      {(isFailed || isRefunded || isCancelled) ? (
         <div style={{
-          background: isFailed ? 'rgba(239,68,68,0.1)' : 'rgba(156,163,175,0.1)',
-          border: `1px solid ${isFailed ? 'rgba(239,68,68,0.25)' : 'rgba(156,163,175,0.25)'}`,
+          background: isFailed ? 'rgba(239,68,68,0.1)' : isCancelled ? 'rgba(251,146,60,0.1)' : 'rgba(156,163,175,0.1)',
+          border: `1px solid ${isFailed ? 'rgba(239,68,68,0.25)' : isCancelled ? 'rgba(251,146,60,0.25)' : 'rgba(156,163,175,0.25)'}`,
           borderRadius: '14px', padding: '20px',
           display: 'flex', alignItems: 'center', gap: '14px',
         }}>
           {isFailed
             ? <XCircle size={28} color="#ef4444" />
+            : isCancelled
+            ? <Ban size={28} color="#fb923c" />
             : <RefreshCcw size={28} color="#9ca3af" />
           }
           <div>
-            <div style={{ fontWeight: 700, color: isFailed ? '#fca5a5' : '#d1d5db', marginBottom: '4px' }}>
-              {isFailed ? 'Order Failed' : 'Refund Processed'}
+            <div style={{ fontWeight: 700, color: isFailed ? '#fca5a5' : isCancelled ? '#fdba74' : '#d1d5db', marginBottom: '4px' }}>
+              {isFailed ? 'Order Failed' : isCancelled ? 'Payment Cancelled' : 'Refund Processed'}
             </div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
               {isFailed
                 ? 'Something went wrong. Contact support via WhatsApp if payment was deducted.'
+                : isCancelled
+                ? 'Payment was not completed. No data package will be sent. Place a new order to try again.'
                 : 'Your refund has been processed. It may take 1–3 business days.'
               }
             </div>
@@ -148,7 +153,7 @@ export default function OrderTracker({ order }) {
       )}
 
       {/* Delivery estimate for active orders */}
-      {!isFailed && !isRefunded && currentIndex < 3 && (
+      {!isFailed && !isRefunded && !isCancelled && currentIndex < 3 && (
         <div style={{
           marginTop: '24px', padding: '14px 16px',
           background: 'rgba(124,58,237,0.08)',
@@ -190,6 +195,7 @@ function StatusBadge({ status }) {
     delivered:  { label: 'Delivered',  cls: 'badge-delivered' },
     failed:     { label: 'Failed',     cls: 'badge-failed' },
     refunded:   { label: 'Refunded',   cls: 'badge-refunded' },
+    cancelled:  { label: 'Cancelled',  cls: 'badge-cancelled' },
   }
   const { label, cls } = map[status] || { label: status, cls: 'badge-pending' }
   return <span className={`badge ${cls}`}>{label}</span>

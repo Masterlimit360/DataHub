@@ -385,6 +385,33 @@ async function manualCompleteOrder(req, res) {
   }
 }
 
+/**
+ * Admin: Cancel a pending order (payment was never completed)
+ */
+async function cancelOrder(req, res) {
+  const { id } = req.params;
+
+  try {
+    const orderQuery = await db.query('SELECT * FROM orders WHERE id = $1 LIMIT 1', [id]);
+    const order = orderQuery.rows[0];
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found.' });
+    }
+
+    if (order.status !== 'pending') {
+      return res.status(400).json({ error: `Cannot cancel an order that is currently '${order.status}'. Only pending orders can be cancelled.` });
+    }
+
+    await db.query("UPDATE orders SET status = 'cancelled', updated_at = NOW() WHERE id = $1", [id]);
+
+    return res.json({ message: 'Order cancelled successfully. No data package will be sent.' });
+  } catch (error) {
+    console.error('[Order Controller] cancelOrder error:', error);
+    return res.status(500).json({ error: 'Server error cancelling order.' });
+  }
+}
+
 module.exports = {
   createOrder,
   getOrderById,
@@ -393,5 +420,6 @@ module.exports = {
   retryOrder,
   refundOrder,
   manualCompleteOrder,
-  getUserOrders
+  getUserOrders,
+  cancelOrder
 };

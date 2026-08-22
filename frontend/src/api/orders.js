@@ -17,3 +17,6 @@ export const trackOrder = (phone) =>
 
 export const getOrderById = (id) =>
   client.get(`/orders/${id}`).then((r) => r.data)
+
+export const verifyPayment = (reference) =>
+  client.get(`/payments/verify/${encodeURIComponent(reference)}`).then((r) => r.data)

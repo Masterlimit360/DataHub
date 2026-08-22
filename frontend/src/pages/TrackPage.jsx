@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom'
 import { Search, Phone, ArrowRight, RefreshCcw } from 'lucide-react'
 import OrderTracker from '../components/OrderTracker'
 import { useOrderStatus } from '../hooks/useOrderStatus'
+import { verifyPayment } from '../api/orders'
 
 // Mock order for demo purposes
 const MOCK_ORDER = {
@@ -43,6 +44,26 @@ export default function TrackPage() {
 
   const orders = data?.orders || []
   const hasResults = submitted && !isLoading && orders.length > 0
+
+  // Auto-verify pending orders with Paystack (catches cancelled/abandoned payments)
+  useEffect(() => {
+    if (!orders || orders.length === 0) return
+    
+    const pendingOrders = orders.filter(o => o.status === 'pending' && o.payment_reference)
+    if (pendingOrders.length === 0) return
+
+    // Verify each pending order with Paystack
+    pendingOrders.forEach(async (order) => {
+      try {
+        await verifyPayment(order.payment_reference)
+        // Refetch orders to get updated status
+        refetch()
+      } catch (err) {
+        // Silently ignore verification errors
+        console.warn('[TrackPage] Payment verification failed for', order.payment_reference, err)
+      }
+    })
+  }, [orders.length, orders.map(o => o.status).join(',')])
 
   // Demo mode: show mock order if no real data
   const showDemo = submitted && !isLoading && !isError && orders.length === 0

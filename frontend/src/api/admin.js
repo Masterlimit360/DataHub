@@ -17,6 +17,9 @@ export const refundOrder = (id) =>
 export const completeOrder = (id) =>
   client.post(`/admin/orders/${id}/complete`).then((r) => r.data)
 
+export const cancelOrder = (id) =>
+  client.post(`/admin/orders/${id}/cancel`).then((r) => r.data)
+
 // Bundles (admin)
 export const getAdminBundles = () =>
   client.get('/admin/bundles').then((r) => r.data)
