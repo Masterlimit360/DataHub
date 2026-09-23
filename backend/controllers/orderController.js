@@ -191,7 +191,7 @@ async function getUserOrders(req, res) {
  * Admin: Get list of all orders
  */
 async function adminGetOrders(req, res) {
-  const { status, network_id, order_type, limit = 50, offset = 0 } = req.query;
+  const { status, network_id, order_type, limit = 50, offset = 0, search } = req.query;
 
   try {
     let query = `
@@ -203,7 +203,7 @@ async function adminGetOrders(req, res) {
     const params = [];
     const conditions = [];
 
-    if (status) {
+    if (status && status !== 'all') {
       params.push(status);
       conditions.push(`o.status = $${params.length}`);
     }
@@ -214,6 +214,11 @@ async function adminGetOrders(req, res) {
     if (order_type) {
       params.push(order_type);
       conditions.push(`o.order_type = $${params.length}`);
+    }
+    if (search && String(search).trim()) {
+      const cleanSearch = `%${String(search).trim()}%`;
+      params.push(cleanSearch);
+      conditions.push(`(o.phone_number ILIKE $${params.length} OR o.payment_reference ILIKE $${params.length})`);
     }
 
     if (conditions.length > 0) {
@@ -229,8 +234,14 @@ async function adminGetOrders(req, res) {
     params.push(parseInt(offset));
     query += ` OFFSET $${params.length}`;
 
-    // Get count for total items
-    const countRes = await db.query('SELECT COUNT(*)::int as count FROM orders');
+    // Get count for total items using same filters
+    const countQuery = `
+      SELECT COUNT(*)::int as count
+      FROM orders o
+      ${conditions.length > 0 ? ' WHERE ' + conditions.join(' AND ') : ''}
+    `;
+
+    const countRes = await db.query(countQuery, params.slice(0, params.length - 2));
 
     const result = await db.pool.query(query, params);
     return res.json({
@@ -354,6 +365,12 @@ async function manualCompleteOrder(req, res) {
       return res.status(400).json({ error: 'Order is already delivered.' });
     }
 
+    if (!['paid', 'processing'].includes(order.status)) {
+      return res.status(400).json({
+        error: `Cannot complete an order that is currently '${order.status}'. Only paid or processing orders can be manually completed.`
+      });
+    }
+
     // Set status to delivered
     const wholesaleRef = 'MANUAL-' + Date.now();
     await db.query(`
@@ -412,6 +429,40 @@ async function cancelOrder(req, res) {
   }
 }
 
+/**
+ * Helper: Get stale pending order timeout minutes
+ */
+function getStalePendingOrderTimeoutMinutes() {
+  const configuredMinutes = Number(process.env.STALE_PENDING_ORDER_MINUTES || 30);
+  return Number.isFinite(configuredMinutes) && configuredMinutes > 0 ? configuredMinutes : 30;
+}
+
+/**
+ * Helper: Cleanup stale pending orders
+ */
+async function cleanupStalePendingOrders() {
+  const timeoutMinutes = getStalePendingOrderTimeoutMinutes();
+
+  try {
+    const result = await db.query(`
+      UPDATE orders
+      SET status = 'cancelled', updated_at = NOW()
+      WHERE status = 'pending'
+        AND created_at < NOW() - ($1 || ' minutes')::interval
+      RETURNING id, payment_reference, phone_number, status
+    `, [timeoutMinutes]);
+
+    if (result.rows.length > 0) {
+      console.log(`[Order Cleanup] Cancelled ${result.rows.length} stale pending order(s) older than ${timeoutMinutes} minutes.`);
+    }
+
+    return result.rows;
+  } catch (error) {
+    console.error('[Order Cleanup] Error cancelling stale pending orders:', error);
+    return [];
+  }
+}
+
 module.exports = {
   createOrder,
   getOrderById,
@@ -421,5 +472,6 @@ module.exports = {
   refundOrder,
   manualCompleteOrder,
   getUserOrders,
-  cancelOrder
+  cancelOrder,
+  cleanupStalePendingOrders
 };

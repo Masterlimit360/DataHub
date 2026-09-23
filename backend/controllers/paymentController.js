@@ -109,7 +109,7 @@ async function handleWebhook(req, res) {
         return;
       }
 
-      // 2. Check idempotency: If already paid or processed, skip
+      // 2. Check idempotency: only pending orders can transition to paid.
       if (order.status !== 'pending') {
         console.log(`[Payment Webhook] Order ${order.id} is already processed (Status: ${order.status}). Skipping.`);
         return;
@@ -121,57 +121,10 @@ async function handleWebhook(req, res) {
         VALUES ($1, $2, $3, $4, $5)
       `, [order.id, String(providerRef), amountGhs, 'success', payload]);
 
-      // 3. Mark as paid & processing
+      // 3. Mark as paid only. Admin completes the order manually after confirming delivery.
       await db.query('UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2', ['paid', order.id]);
-      console.log(`[Payment Webhook] Order ${order.id} marked as PAID. Triggering wholesale API...`);
-
-      // 4. Retrieve bundle details if it's a data order
-      let bundle = null;
-      if (order.order_type === 'data' && order.bundle_id) {
-        const bundleQuery = await db.query('SELECT * FROM bundles WHERE id = $1', [order.bundle_id]);
-        bundle = bundleQuery.rows[0];
-      }
-
-      // Update status to processing
-      await db.query('UPDATE orders SET status = $1, updated_at = NOW() WHERE id = $2', ['processing', order.id]);
-
-      // 5. Deliver order via ProviderAdapter
-      const delivery = await providerAdapter.deliver(order, bundle);
-
-      if (delivery.success) {
-        // Update order to delivered
-        await db.query(`
-          UPDATE orders 
-          SET status = 'delivered', wholesale_reference = $1, updated_at = NOW() 
-          WHERE id = $2
-        `, [delivery.wholesale_reference, order.id]);
-
-        console.log(`[Payment Webhook] Order ${order.id} delivered successfully! Ref: ${delivery.wholesale_reference}`);
-
-        // 6. Send success SMS to user
-        const networkName = order.network_id.toUpperCase();
-        let messageText = '';
-        if (order.order_type === 'data' && bundle) {
-          messageText = `JB-DataHub: Success! ${bundle.label} has been delivered to ${order.phone_number}. Ref: ${delivery.wholesale_reference}. Thank you for buying!`;
-        } else {
-          messageText = `JB-DataHub: Success! GHS ${order.amount_ghs} Airtime top-up has been sent to ${order.phone_number}. Ref: ${delivery.wholesale_reference}.`;
-        }
-        await sendSMS(order.phone_number, messageText);
-
-      } else {
-        // Mark as failed
-        await db.query(`
-          UPDATE orders 
-          SET status = 'failed', updated_at = NOW() 
-          WHERE id = $1
-        `, [order.id]);
-
-        console.error(`[Payment Webhook] Wholesale delivery failed for Order ${order.id}. Error: ${delivery.error}`);
-
-        // Send failure SMS notification
-        const failMessage = `JB-DataHub Alert: Payment received, but delivery of your order to ${order.phone_number} failed. Our support is processing it manually. Ref: ${order.payment_reference}.`;
-        await sendSMS(order.phone_number, failMessage);
-      }
+      console.log(`[Payment Webhook] Order ${order.id} marked as PAID. Awaiting admin completion.`);
+      return;
     }
 
     // Handle failed/cancelled payments from Paystack

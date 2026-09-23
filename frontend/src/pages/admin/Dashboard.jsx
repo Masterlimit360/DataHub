@@ -56,7 +56,6 @@ export default function AdminDashboard() {
   const { data: ordersData, isLoading: ordersLoading } = useQuery({
     queryKey: ['admin-orders', statusFilter, searchQuery],
     queryFn: () => getAdminOrders({ status: statusFilter !== 'all' ? statusFilter : undefined, search: searchQuery || undefined }),
-    placeholderData: { orders: MOCK_ORDERS },
     retry: false,
   })
 
@@ -104,13 +103,15 @@ export default function AdminDashboard() {
     weekly_chart: chartData.length > 0 ? chartData : MOCK_STATS.weekly_chart
   }
 
-  const orders = ordersData?.orders || MOCK_ORDERS
+  const orders = ordersData?.orders ?? []
 
   const filteredOrders = orders.filter(o => {
     if (statusFilter !== 'all' && o.status !== statusFilter) return false
     if (searchQuery && !o.phone_number.includes(searchQuery) && !o.payment_reference?.includes(searchQuery)) return false
     return true
   })
+
+  const shouldShowEmptyState = !ordersLoading && filteredOrders.length === 0
 
   return (
     <div style={{ paddingBottom: '60px' }}>
@@ -275,13 +276,18 @@ export default function AdminDashboard() {
             <div className="glass-card" style={{ padding: '24px' }}>
               {ordersLoading
                 ? <div style={{ textAlign: 'center', padding: '48px' }}><div className="spinner" style={{ margin: '0 auto' }} /></div>
-                : <OrdersTable
-                    orders={filteredOrders}
-                    onRetry={id => retryMut.mutate(id)}
-                    onRefund={id => refundMut.mutate(id)}
-                    onComplete={id => completeMut.mutate(id)}
-                    onCancel={id => cancelMut.mutate(id)}
-                  />
+                : shouldShowEmptyState
+                  ? <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                      <Package size={32} style={{ margin: '0 auto 12px' }} />
+                      No orders found for this filter
+                    </div>
+                  : <OrdersTable
+                      orders={filteredOrders}
+                      onRetry={id => retryMut.mutate(id)}
+                      onRefund={id => refundMut.mutate(id)}
+                      onComplete={id => completeMut.mutate(id)}
+                      onCancel={id => cancelMut.mutate(id)}
+                    />
               }
             </div>
           </div>
@@ -346,7 +352,7 @@ function OrdersTable({ orders, onRetry, onRefund, onComplete, onCancel, compact 
               {!compact && (
                 <td style={{ padding: '14px 12px' }}>
                   <div style={{ display: 'flex', gap: '6px' }}>
-                    {['pending', 'paid', 'processing'].includes(order.status) && (
+                    {['paid', 'processing'].includes(order.status) && (
                       <button
                         onClick={() => onComplete(order.id)}
                         style={{ padding: '5px 10px', borderRadius: '7px', border: '1px solid rgba(16,185,129,0.3)', background: 'rgba(16,185,129,0.1)', color: '#34d399', fontSize: '11px', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '4px' }}

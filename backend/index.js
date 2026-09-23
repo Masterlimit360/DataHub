@@ -5,6 +5,7 @@ require('dotenv').config();
 const apiRouter = require('./routes/api');
 const db = require('./db');
 const { seedAdminIfEmpty } = require('./controllers/authController');
+const { cleanupStalePendingOrders } = require('./controllers/orderController');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -65,6 +66,11 @@ app.use((err, req, res, next) => {
   });
 });
 
+async function initializeServer() {
+  await seedAdminIfEmpty();
+  await cleanupStalePendingOrders();
+}
+
 // Boot Database Seeding & Launch Server
 if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
   app.listen(PORT, async () => {
@@ -72,11 +78,11 @@ if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
     console.log(`[JB-DataHub Backend] Server listening on port ${PORT}`);
     
     // Bootstrap Admin user if table is empty
-    await seedAdminIfEmpty();
+    await initializeServer();
   });
 } else {
   // Direct seed in serverless env on load (or via DB script)
-  seedAdminIfEmpty().catch(console.error);
+  initializeServer().catch(console.error);
 }
 
 module.exports = app;
