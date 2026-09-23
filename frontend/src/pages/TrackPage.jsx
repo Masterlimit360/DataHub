@@ -5,22 +5,12 @@ import OrderTracker from '../components/OrderTracker'
 import { useOrderStatus } from '../hooks/useOrderStatus'
 import { verifyPayment } from '../api/orders'
 
-// Mock order for demo purposes
-const MOCK_ORDER = {
-  id: 'mock-001',
-  payment_reference: 'AJ-DEMO12345',
-  order_type: 'data',
-  network_name: 'MTN Ghana',
-  amount_ghs: 10.00,
-  phone_number: '0244123456',
-  status: 'delivered',
-}
-
 export default function TrackPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [inputPhone, setInputPhone] = useState(searchParams.get('phone') || '')
   const [queryPhone, setQueryPhone] = useState(searchParams.get('phone') || '')
   const [submitted, setSubmitted] = useState(!!searchParams.get('phone'))
+  const paymentReference = searchParams.get('ref')
 
   const { data, isLoading, isError, refetch } = useOrderStatus(queryPhone, submitted && !!queryPhone)
 
@@ -32,7 +22,7 @@ export default function TrackPage() {
       setQueryPhone(phone)
       setSubmitted(true)
     }
-  }, [])
+  }, [searchParams])
 
   const handleSearch = (e) => {
     e.preventDefault()
@@ -45,6 +35,26 @@ export default function TrackPage() {
   const orders = data?.orders || []
   const hasResults = submitted && !isLoading && orders.length > 0
 
+  // If a payment reference is present, verify it immediately so a successful Paystack transaction cannot remain pending.
+  useEffect(() => {
+    if (!paymentReference) return
+
+    let cancelled = false
+
+    ;(async () => {
+      try {
+        await verifyPayment(paymentReference)
+        if (!cancelled) refetch()
+      } catch (err) {
+        console.warn('[TrackPage] Payment verification failed for', paymentReference, err)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [paymentReference, refetch])
+
   // Auto-verify pending orders with Paystack (catches cancelled/abandoned payments)
   useEffect(() => {
     if (!orders || orders.length === 0) return
@@ -52,21 +62,15 @@ export default function TrackPage() {
     const pendingOrders = orders.filter(o => o.status === 'pending' && o.payment_reference)
     if (pendingOrders.length === 0) return
 
-    // Verify each pending order with Paystack
     pendingOrders.forEach(async (order) => {
       try {
         await verifyPayment(order.payment_reference)
-        // Refetch orders to get updated status
         refetch()
       } catch (err) {
-        // Silently ignore verification errors
         console.warn('[TrackPage] Payment verification failed for', order.payment_reference, err)
       }
     })
-  }, [orders.length, orders.map(o => o.status).join(',')])
-
-  // Demo mode: show mock order if no real data
-  const showDemo = submitted && !isLoading && !isError && orders.length === 0
+  }, [orders, refetch])
 
   return (
     <div style={{ paddingBottom: '80px', paddingTop: '60px' }}>
@@ -168,23 +172,6 @@ export default function TrackPage() {
           </div>
         )}
 
-        {/* Demo/empty state */}
-        {showDemo && (
-          <div className="animate-fade-in">
-            <div style={{
-              background: 'rgba(245,158,11,0.08)',
-              border: '1px solid rgba(245,158,11,0.2)',
-              borderRadius: '14px', padding: '16px 20px',
-              display: 'flex', alignItems: 'center', gap: '12px',
-              marginBottom: '24px', fontSize: '13px', color: '#fcd34d',
-            }}>
-              ℹ️ No orders found for that number. Showing a demo order below.
-            </div>
-            <OrderTracker order={MOCK_ORDER} />
-          </div>
-        )}
-
-        {/* Not searched yet */}
         {!submitted && (
           <div className="animate-fade-in" style={{
             textAlign: 'center', padding: '48px',
@@ -202,6 +189,19 @@ export default function TrackPage() {
                 Buy Data or Airtime <ArrowRight size={15} />
               </button>
             </Link>
+          </div>
+        )}
+
+        {submitted && !isLoading && !isError && !hasResults && (
+          <div style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            borderRadius: '16px',
+            padding: '24px',
+            textAlign: 'center',
+            color: 'var(--text-secondary)',
+          }}>
+            No orders found for that phone number yet.
           </div>
         )}
       </div>

@@ -8,7 +8,7 @@ const { sendSMS } = require('../services/sms');
  * Initialize payment via Paystack
  */
 async function initializePayment(req, res) {
-  const { order_id, email, amount, reference } = req.body;
+  const { order_id, email, amount, reference, phone_number } = req.body;
 
   if (!order_id || !email || !amount || !reference) {
     return res.status(400).json({ error: 'Missing required parameters for initialization.' });
@@ -16,13 +16,14 @@ async function initializePayment(req, res) {
 
   const secretKey = process.env.PAYSTACK_SECRET_KEY;
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const returnPhone = phone_number || email.split('@')[0];
 
   // Fallback mock payment URL if secret key is missing (for local testing/dev)
   if (!secretKey || secretKey.startsWith('sk_test_placeholder')) {
     console.log('[Payment Controller] Paystack Secret Key not set or placeholder. Falling back to Mock Payment page.');
     
     // Simulate successful sandbox checkout redirect
-    const mockCheckoutUrl = `${frontendUrl}/track?ref=${reference}&phone=${email.split('@')[0]}&mock_paid=true`;
+    const mockCheckoutUrl = `${frontendUrl}/track?ref=${reference}&phone=${encodeURIComponent(returnPhone)}&mock_paid=true`;
     return res.json({ authorization_url: mockCheckoutUrl });
   }
 
@@ -32,7 +33,7 @@ async function initializePayment(req, res) {
       amount, // in GHS Pesewas (kobo equivalent)
       reference,
       currency: 'GHS',
-      callback_url: `${frontendUrl}/track?phone=${email.split('@')[0]}`
+      callback_url: `${frontendUrl}/track?ref=${encodeURIComponent(reference)}&phone=${encodeURIComponent(returnPhone)}`
     }, {
       headers: {
         Authorization: `Bearer ${secretKey}`,
@@ -54,7 +55,7 @@ async function initializePayment(req, res) {
     
     // Safety fallback: allow mock checkout redirect in local environment if Paystack is down or keys are misconfigured
     if (process.env.NODE_ENV !== 'production') {
-      const mockCheckoutUrl = `${frontendUrl}/track?ref=${reference}&phone=${email.split('@')[0]}&mock_paid=true`;
+      const mockCheckoutUrl = `${frontendUrl}/track?ref=${reference}&phone=${encodeURIComponent(returnPhone)}&mock_paid=true`;
       return res.json({ authorization_url: mockCheckoutUrl });
     }
     
